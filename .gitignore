@@ -1,0 +1,14 @@
+/data/
+/mlruns/
+/mlflow.db
+/artifacts/
+/.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+build/
+dist/
+.env
+.env.*
