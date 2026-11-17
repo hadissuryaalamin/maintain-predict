@@ -3,12 +3,18 @@
 `baseline_report.tex` is the English LaTeX report of completed dataset analysis,
 target-policy decisions, data splitting, and the executed dummy, logistic
 regression, Random Forest, and XGBoost experiments. The 18 November 2026 update
-includes tree-model searches, training-only CV, four-way validation metrics,
-confusion matrices, and the precision/recall tradeoff.
-All model results use the validation set; no final test evaluation is reported.
+includes tree-model searches, training-only CV, four feature experiments,
+validation metrics, confusion matrices, and the precision/recall tradeoff.
+It records the user's choice of seven-input XGBoost with torque × wear and
+retention of threshold 0.5 without tuning. Training CV and validation results
+are identified separately; no final test evaluation is reported.
 
-The `figures/` directory contains copies of the four existing validation
+The `figures/` directory contains copies of the eight existing validation
 confusion-matrix PNGs. Keep it beside the LaTeX source when compiling.
+
+`verified_results.json` records the source summaries used for the update,
+the selected model, and threshold policy. The LaTeX source is directly editable;
+recompilation does not require the original model artifacts.
 
 From the project root, build the PDF with:
 

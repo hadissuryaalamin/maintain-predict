@@ -1,0 +1,584 @@
+{
+  "updated": "2026-11-18",
+  "source_sha256": "dc6630cd9b1f0f853922fad78a1b6436570d3f1ec863f1dd5c4340ac56bc8a8e",
+  "target_policy": "failure_evidence_or_v1",
+  "selected_model": "torque_wear",
+  "selected_threshold": 0.5,
+  "threshold_tuned": false,
+  "operational_cost_objective": null,
+  "test_evaluated": false,
+  "baseline_summary": {
+    "target_policy": "failure_evidence_or_v1",
+    "source_sha256": "dc6630cd9b1f0f853922fad78a1b6436570d3f1ec863f1dd5c4340ac56bc8a8e",
+    "split_manifest": "E:\\maintain-predict\\data\\splits\\type_target_seed42.json",
+    "random_state": 42,
+    "threshold": 0.5,
+    "evaluation_partition": "validation",
+    "test_evaluated": false,
+    "environment": {
+      "numpy": "2.5.4",
+      "pandas": "3.1.1",
+      "scikit-learn": "1.9.1",
+      "mlflow": "3.18.0",
+      "skops": "0.16.0",
+      "python": "3.14.3"
+    },
+    "models": {
+      "always_no_failure": {
+        "validation_metrics": {
+          "average_precision": 0.036,
+          "accuracy": 0.964,
+          "precision": null,
+          "recall": 0.0,
+          "f1": 0.0,
+          "threshold": 0.5,
+          "observations": 1500,
+          "actual_positives": 54,
+          "predicted_positives": 0,
+          "confusion_matrix": {
+            "tn": 1446,
+            "fp": 0,
+            "fn": 54,
+            "tp": 0
+          }
+        },
+        "mlflow_run_id": "7d06668798524b0585917072719d8841",
+        "model_path": "E:\\maintain-predict\\artifacts\\baselines\\always_no_failure\\model.skops"
+      },
+      "logistic_regression": {
+        "validation_metrics": {
+          "average_precision": 0.5288069339823858,
+          "accuracy": 0.8006666666666666,
+          "precision": 0.13649851632047477,
+          "recall": 0.8518518518518519,
+          "f1": 0.23529411764705882,
+          "threshold": 0.5,
+          "observations": 1500,
+          "actual_positives": 54,
+          "predicted_positives": 337,
+          "confusion_matrix": {
+            "tn": 1155,
+            "fp": 291,
+            "fn": 8,
+            "tp": 46
+          }
+        },
+        "mlflow_run_id": "457b45c83e8b428b817082227d733b1b",
+        "model_path": "E:\\maintain-predict\\artifacts\\baselines\\logistic_regression\\model.skops"
+      }
+    }
+  },
+  "random_forest_summary": {
+    "source_sha256": "dc6630cd9b1f0f853922fad78a1b6436570d3f1ec863f1dd5c4340ac56bc8a8e",
+    "target_policy": "failure_evidence_or_v1",
+    "random_state": 42,
+    "split_manifest": "E:\\maintain-predict\\data\\splits\\type_target_seed42.json",
+    "threshold": 0.5,
+    "evaluation_partition": "validation",
+    "test_evaluated": false,
+    "best_params": {
+      "model__max_depth": null,
+      "model__min_samples_leaf": 1,
+      "model__n_estimators": 300
+    },
+    "cv": {
+      "random_forest_selected": {
+        "mean_ap": 0.6773894990115974,
+        "std_ap": 0.0794180800716612,
+        "fold_ap": [
+          0.5375465935651345,
+          0.6911305571316019,
+          0.7653939265063082,
+          0.6556901023960743,
+          0.7371863154588687
+        ]
+      },
+      "logistic_regression_reference": {
+        "mean_ap": 0.40475940562232243,
+        "std_ap": 0.06941883470703965,
+        "fold_ap": [
+          0.34533381492685616,
+          0.3631308251881165,
+          0.5323110940757452,
+          0.35826879771537673,
+          0.42475249620551764
+        ]
+      }
+    },
+    "validation_metrics": {
+      "average_precision": 0.7529384025465148,
+      "accuracy": 0.9813333333333333,
+      "precision": 0.76,
+      "recall": 0.7037037037037037,
+      "f1": 0.7307692307692307,
+      "threshold": 0.5,
+      "observations": 1500,
+      "actual_positives": 54,
+      "predicted_positives": 50,
+      "confusion_matrix": {
+        "tn": 1434,
+        "fp": 12,
+        "fn": 16,
+        "tp": 38
+      }
+    },
+    "environment": {
+      "numpy": "2.5.4",
+      "pandas": "3.1.1",
+      "scikit-learn": "1.9.1",
+      "mlflow": "3.18.0",
+      "skops": "0.16.0",
+      "python": "3.14.3"
+    },
+    "mlflow_run_id": "ca74cf52620f4267813e1174c40622eb"
+  },
+  "xgboost_and_feature_summaries": {
+    "xgboost": {
+      "source_sha256": "dc6630cd9b1f0f853922fad78a1b6436570d3f1ec863f1dd5c4340ac56bc8a8e",
+      "target_policy": "failure_evidence_or_v1",
+      "random_state": 42,
+      "split_manifest": "E:\\maintain-predict\\data\\splits\\type_target_seed42.json",
+      "threshold": 0.5,
+      "evaluation_partition": "validation",
+      "test_evaluated": false,
+      "best_params": {
+        "model__learning_rate": 0.1,
+        "model__max_depth": 5,
+        "model__n_estimators": 300
+      },
+      "scale_pos_weight": 27.0,
+      "cv": {
+        "mean_ap": 0.7165357920161859,
+        "std_ap": 0.05200718804752688,
+        "fold_ap": [
+          0.6566572689702644,
+          0.669678120319953,
+          0.7797109330321521,
+          0.7008811884477849,
+          0.7757514493107749
+        ]
+      },
+      "validation_metrics": {
+        "average_precision": 0.7874745226952924,
+        "accuracy": 0.9806666666666667,
+        "precision": 0.6984126984126984,
+        "recall": 0.8148148148148148,
+        "f1": 0.7521367521367521,
+        "threshold": 0.5,
+        "observations": 1500,
+        "actual_positives": 54,
+        "predicted_positives": 63,
+        "confusion_matrix": {
+          "tn": 1427,
+          "fp": 19,
+          "fn": 10,
+          "tp": 44
+        }
+      },
+      "environment": {
+        "numpy": "2.5.4",
+        "pandas": "3.1.1",
+        "scikit-learn": "1.9.1",
+        "mlflow": "3.18.0",
+        "skops": "0.16.0",
+        "xgboost": "3.4.1",
+        "python": "3.14.3"
+      },
+      "model_file": "model.ubj",
+      "preprocessor_file": "preprocessor.skops",
+      "feature_columns": [
+        "Type",
+        "Air temperature [K]",
+        "Process temperature [K]",
+        "Rotational speed [rpm]",
+        "Torque [Nm]",
+        "Tool wear [min]"
+      ],
+      "encoded_feature_names": [
+        "type__Type_H",
+        "type__Type_L",
+        "type__Type_M",
+        "sensors__Air temperature [K]",
+        "sensors__Process temperature [K]",
+        "sensors__Rotational speed [rpm]",
+        "sensors__Torque [Nm]",
+        "sensors__Tool wear [min]"
+      ],
+      "mlflow_run_id": "25d0be05532d41059145d2adcabaacf8"
+    },
+    "temperature_difference": {
+      "source_sha256": "dc6630cd9b1f0f853922fad78a1b6436570d3f1ec863f1dd5c4340ac56bc8a8e",
+      "target_policy": "failure_evidence_or_v1",
+      "random_state": 42,
+      "split_manifest": "E:\\maintain-predict\\data\\splits\\type_target_seed42.json",
+      "threshold": 0.5,
+      "evaluation_partition": "validation",
+      "test_evaluated": false,
+      "reference_run_id": "25d0be05532d41059145d2adcabaacf8",
+      "fixed_params": {
+        "model__learning_rate": 0.1,
+        "model__max_depth": 5,
+        "model__n_estimators": 300
+      },
+      "new_hyperparameter_search": false,
+      "raw_feature_columns": [
+        "Type",
+        "Air temperature [K]",
+        "Process temperature [K]",
+        "Rotational speed [rpm]",
+        "Torque [Nm]",
+        "Tool wear [min]"
+      ],
+      "feature_columns": [
+        "Type",
+        "Air temperature [K]",
+        "Process temperature [K]",
+        "Rotational speed [rpm]",
+        "Torque [Nm]",
+        "Tool wear [min]",
+        "Temperature difference [K]"
+      ],
+      "added_feature": "Temperature difference [K]",
+      "formula": "Process temperature [K] - Air temperature [K]",
+      "cv": {
+        "original_mean_ap": 0.7165357920161859,
+        "original_std_ap": 0.05200718804752688,
+        "augmented_mean_ap": 0.7514017215187556,
+        "augmented_std_ap": 0.031930766571819355,
+        "paired_mean_ap_difference": 0.03486592950256975,
+        "paired_std_ap_difference": 0.023038931467230718,
+        "exploratory_cv_gain_positive": true
+      },
+      "validation_metrics": {
+        "average_precision": 0.7805455307150929,
+        "accuracy": 0.9833333333333333,
+        "precision": 0.7735849056603774,
+        "recall": 0.7592592592592593,
+        "f1": 0.7663551401869159,
+        "threshold": 0.5,
+        "observations": 1500,
+        "actual_positives": 54,
+        "predicted_positives": 53,
+        "confusion_matrix": {
+          "tn": 1434,
+          "fp": 12,
+          "fn": 13,
+          "tp": 41
+        }
+      },
+      "reference_validation_metrics": {
+        "average_precision": 0.7874745226952924,
+        "accuracy": 0.9806666666666667,
+        "precision": 0.6984126984126984,
+        "recall": 0.8148148148148148,
+        "f1": 0.7521367521367521,
+        "threshold": 0.5,
+        "observations": 1500,
+        "actual_positives": 54,
+        "predicted_positives": 63,
+        "confusion_matrix": {
+          "tn": 1427,
+          "fp": 19,
+          "fn": 10,
+          "tp": 44
+        }
+      },
+      "scale_pos_weight": 27.0,
+      "environment": {
+        "numpy": "2.5.4",
+        "pandas": "3.1.1",
+        "scikit-learn": "1.9.1",
+        "mlflow": "3.18.0",
+        "skops": "0.16.0",
+        "xgboost": "3.4.1",
+        "python": "3.14.3"
+      },
+      "model_file": "model.ubj",
+      "preprocessor_file": "preprocessor.skops",
+      "mlflow_run_id": "53d447476aea42c09a21d1fb77cd8f59"
+    },
+    "power": {
+      "source_sha256": "dc6630cd9b1f0f853922fad78a1b6436570d3f1ec863f1dd5c4340ac56bc8a8e",
+      "target_policy": "failure_evidence_or_v1",
+      "random_state": 42,
+      "split_manifest": "E:\\maintain-predict\\data\\splits\\type_target_seed42.json",
+      "threshold": 0.5,
+      "evaluation_partition": "validation",
+      "test_evaluated": false,
+      "reference_run_id": "25d0be05532d41059145d2adcabaacf8",
+      "fixed_params": {
+        "model__learning_rate": 0.1,
+        "model__max_depth": 5,
+        "model__n_estimators": 300
+      },
+      "new_hyperparameter_search": false,
+      "raw_feature_columns": [
+        "Type",
+        "Air temperature [K]",
+        "Process temperature [K]",
+        "Rotational speed [rpm]",
+        "Torque [Nm]",
+        "Tool wear [min]"
+      ],
+      "feature_columns": [
+        "Type",
+        "Air temperature [K]",
+        "Process temperature [K]",
+        "Rotational speed [rpm]",
+        "Torque [Nm]",
+        "Tool wear [min]",
+        "Power [W]"
+      ],
+      "added_feature": "Power [W]",
+      "formula": "Torque [Nm] * Rotational speed [rpm] * 2*pi/60",
+      "cv": {
+        "original_mean_ap": 0.7165357920161859,
+        "original_std_ap": 0.05200718804752688,
+        "augmented_mean_ap": 0.7453036318152353,
+        "augmented_std_ap": 0.054909509758896025,
+        "paired_mean_ap_difference": 0.028767839799049334,
+        "paired_std_ap_difference": 0.028723193878114176,
+        "exploratory_cv_gain_positive": true
+      },
+      "validation_metrics": {
+        "average_precision": 0.7752238822988873,
+        "accuracy": 0.98,
+        "precision": 0.6935483870967742,
+        "recall": 0.7962962962962963,
+        "f1": 0.7413793103448276,
+        "threshold": 0.5,
+        "observations": 1500,
+        "actual_positives": 54,
+        "predicted_positives": 62,
+        "confusion_matrix": {
+          "tn": 1427,
+          "fp": 19,
+          "fn": 11,
+          "tp": 43
+        }
+      },
+      "reference_validation_metrics": {
+        "average_precision": 0.7874745226952924,
+        "accuracy": 0.9806666666666667,
+        "precision": 0.6984126984126984,
+        "recall": 0.8148148148148148,
+        "f1": 0.7521367521367521,
+        "threshold": 0.5,
+        "observations": 1500,
+        "actual_positives": 54,
+        "predicted_positives": 63,
+        "confusion_matrix": {
+          "tn": 1427,
+          "fp": 19,
+          "fn": 10,
+          "tp": 44
+        }
+      },
+      "scale_pos_weight": 27.0,
+      "environment": {
+        "numpy": "2.5.4",
+        "pandas": "3.1.1",
+        "scikit-learn": "1.9.1",
+        "mlflow": "3.18.0",
+        "skops": "0.16.0",
+        "xgboost": "3.4.1",
+        "python": "3.14.3"
+      },
+      "model_file": "model.ubj",
+      "preprocessor_file": "preprocessor.skops",
+      "mlflow_run_id": "dc47ba8ec99c40ef890f906e778e8863"
+    },
+    "torque_wear": {
+      "source_sha256": "dc6630cd9b1f0f853922fad78a1b6436570d3f1ec863f1dd5c4340ac56bc8a8e",
+      "target_policy": "failure_evidence_or_v1",
+      "random_state": 42,
+      "split_manifest": "E:\\maintain-predict\\data\\splits\\type_target_seed42.json",
+      "threshold": 0.5,
+      "evaluation_partition": "validation",
+      "test_evaluated": false,
+      "reference_run_id": "25d0be05532d41059145d2adcabaacf8",
+      "fixed_params": {
+        "model__learning_rate": 0.1,
+        "model__max_depth": 5,
+        "model__n_estimators": 300
+      },
+      "new_hyperparameter_search": false,
+      "raw_feature_columns": [
+        "Type",
+        "Air temperature [K]",
+        "Process temperature [K]",
+        "Rotational speed [rpm]",
+        "Torque [Nm]",
+        "Tool wear [min]"
+      ],
+      "feature_columns": [
+        "Type",
+        "Air temperature [K]",
+        "Process temperature [K]",
+        "Rotational speed [rpm]",
+        "Torque [Nm]",
+        "Tool wear [min]",
+        "Torque wear [Nm min]"
+      ],
+      "added_feature": "Torque wear [Nm min]",
+      "formula": "Torque [Nm] * Tool wear [min]",
+      "cv": {
+        "original_mean_ap": 0.7165357920161859,
+        "original_std_ap": 0.05200718804752688,
+        "augmented_mean_ap": 0.7462280958492319,
+        "augmented_std_ap": 0.03831897827970536,
+        "paired_mean_ap_difference": 0.02969230383304604,
+        "paired_std_ap_difference": 0.02509321440658589,
+        "exploratory_cv_gain_positive": true
+      },
+      "validation_metrics": {
+        "average_precision": 0.8482821023075567,
+        "accuracy": 0.984,
+        "precision": 0.7419354838709677,
+        "recall": 0.8518518518518519,
+        "f1": 0.7931034482758621,
+        "threshold": 0.5,
+        "observations": 1500,
+        "actual_positives": 54,
+        "predicted_positives": 62,
+        "confusion_matrix": {
+          "tn": 1430,
+          "fp": 16,
+          "fn": 8,
+          "tp": 46
+        }
+      },
+      "reference_validation_metrics": {
+        "average_precision": 0.7874745226952924,
+        "accuracy": 0.9806666666666667,
+        "precision": 0.6984126984126984,
+        "recall": 0.8148148148148148,
+        "f1": 0.7521367521367521,
+        "threshold": 0.5,
+        "observations": 1500,
+        "actual_positives": 54,
+        "predicted_positives": 63,
+        "confusion_matrix": {
+          "tn": 1427,
+          "fp": 19,
+          "fn": 10,
+          "tp": 44
+        }
+      },
+      "scale_pos_weight": 27.0,
+      "environment": {
+        "numpy": "2.5.4",
+        "pandas": "3.1.1",
+        "scikit-learn": "1.9.1",
+        "mlflow": "3.18.0",
+        "skops": "0.16.0",
+        "xgboost": "3.4.1",
+        "python": "3.14.3"
+      },
+      "model_file": "model.ubj",
+      "preprocessor_file": "preprocessor.skops",
+      "mlflow_run_id": "536e8de3290747f094beae06b7eaf443"
+    },
+    "torque_wear_temperature_difference": {
+      "source_sha256": "dc6630cd9b1f0f853922fad78a1b6436570d3f1ec863f1dd5c4340ac56bc8a8e",
+      "target_policy": "failure_evidence_or_v1",
+      "random_state": 42,
+      "split_manifest": "E:\\maintain-predict\\data\\splits\\type_target_seed42.json",
+      "threshold": 0.5,
+      "evaluation_partition": "validation",
+      "test_evaluated": false,
+      "reference_run_id": "536e8de3290747f094beae06b7eaf443",
+      "fixed_params": {
+        "model__learning_rate": 0.1,
+        "model__max_depth": 5,
+        "model__n_estimators": 300
+      },
+      "new_hyperparameter_search": false,
+      "raw_feature_columns": [
+        "Type",
+        "Air temperature [K]",
+        "Process temperature [K]",
+        "Rotational speed [rpm]",
+        "Torque [Nm]",
+        "Tool wear [min]"
+      ],
+      "reference_feature_columns": [
+        "Type",
+        "Air temperature [K]",
+        "Process temperature [K]",
+        "Rotational speed [rpm]",
+        "Torque [Nm]",
+        "Tool wear [min]",
+        "Torque wear [Nm min]"
+      ],
+      "feature_columns": [
+        "Type",
+        "Air temperature [K]",
+        "Process temperature [K]",
+        "Rotational speed [rpm]",
+        "Torque [Nm]",
+        "Tool wear [min]",
+        "Torque wear [Nm min]",
+        "Temperature difference [K]"
+      ],
+      "added_feature": "Temperature difference [K]",
+      "formula": "Process temperature [K] - Air temperature [K]; retain Torque * Tool wear",
+      "cv": {
+        "reference_mean_ap": 0.7462280958492319,
+        "reference_std_ap": 0.03831897827970536,
+        "augmented_mean_ap": 0.7847368758465464,
+        "augmented_std_ap": 0.03226889066714764,
+        "paired_mean_ap_difference": 0.03850877999731454,
+        "paired_std_ap_difference": 0.015875923997553224,
+        "exploratory_cv_gain_positive": true
+      },
+      "validation_metrics": {
+        "average_precision": 0.8335890789865171,
+        "accuracy": 0.984,
+        "precision": 0.7777777777777778,
+        "recall": 0.7777777777777778,
+        "f1": 0.7777777777777778,
+        "threshold": 0.5,
+        "observations": 1500,
+        "actual_positives": 54,
+        "predicted_positives": 54,
+        "confusion_matrix": {
+          "tn": 1434,
+          "fp": 12,
+          "fn": 12,
+          "tp": 42
+        }
+      },
+      "reference_validation_metrics": {
+        "average_precision": 0.8482821023075567,
+        "accuracy": 0.984,
+        "precision": 0.7419354838709677,
+        "recall": 0.8518518518518519,
+        "f1": 0.7931034482758621,
+        "threshold": 0.5,
+        "observations": 1500,
+        "actual_positives": 54,
+        "predicted_positives": 62,
+        "confusion_matrix": {
+          "tn": 1430,
+          "fp": 16,
+          "fn": 8,
+          "tp": 46
+        }
+      },
+      "scale_pos_weight": 27.0,
+      "environment": {
+        "numpy": "2.5.4",
+        "pandas": "3.1.1",
+        "scikit-learn": "1.9.1",
+        "mlflow": "3.18.0",
+        "skops": "0.16.0",
+        "xgboost": "3.4.1",
+        "python": "3.14.3"
+      },
+      "model_file": "model.ubj",
+      "preprocessor_file": "preprocessor.skops",
+      "mlflow_run_id": "d23d285dbcd24dd2923a6f97e772dbf9"
+    }
+  }
+}

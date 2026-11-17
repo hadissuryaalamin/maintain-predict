@@ -1,5 +1,7 @@
 """Select allowed inputs and derive the recorded-failure-evidence target."""
 
+from math import pi
+
 import pandas as pd
 
 FEATURE_COLUMNS = (
@@ -15,6 +17,8 @@ FAILURE_FLAG_COLUMNS = ("TWF", "HDF", "PWF", "OSF", "RNF")
 TARGET_COLUMN = "Failure evidence"
 TARGET_POLICY = "failure_evidence_or_v1"
 TEMPERATURE_DIFFERENCE_COLUMN = "Temperature difference [K]"
+POWER_COLUMN = "Power [W]"
+TORQUE_WEAR_COLUMN = "Torque wear [Nm min]"
 
 
 def derive_failure_target(readings: pd.DataFrame) -> pd.Series:
@@ -48,6 +52,43 @@ def add_temperature_difference(features: pd.DataFrame) -> pd.DataFrame:
     Never mutate the source or carry outcome columns into model inputs.
     """
     result = features.loc[:, list(FEATURE_COLUMNS)].copy()
+    result[TEMPERATURE_DIFFERENCE_COLUMN] = (
+        result["Process temperature [K]"] - result["Air temperature [K]"]
+    )
+    return result
+
+
+def add_power(features: pd.DataFrame) -> pd.DataFrame:
+    """Keep six raw inputs and append torque times angular speed in watts.
+
+    rpm * 2*pi/60 converts rotational speed to radians per second. No target,
+    fitted statistics, or other engineered feature is used or retained.
+    """
+    result = features.loc[:, list(FEATURE_COLUMNS)].copy()
+    result[POWER_COLUMN] = (
+        result["Torque [Nm]"] * result["Rotational speed [rpm]"] * (2 * pi / 60)
+    )
+    return result
+
+
+def add_torque_wear(features: pd.DataFrame) -> pd.DataFrame:
+    """Keep six raw inputs and add their torque-by-tool-wear interaction.
+
+    This is an interaction feature, not a measurement of physical strain.
+    Outcome columns and other engineered features are excluded.
+    """
+    result = features.loc[:, list(FEATURE_COLUMNS)].copy()
+    result[TORQUE_WEAR_COLUMN] = result["Torque [Nm]"] * result["Tool wear [min]"]
+    return result
+
+
+def add_torque_wear_and_temperature_difference(features: pd.DataFrame) -> pd.DataFrame:
+    """Retain raw inputs and calculate both selected features from their sensors.
+
+    Do not chain the single-feature helpers: each intentionally keeps only its
+    own extra column. Start with torque-wear, then append temperature difference.
+    """
+    result = add_torque_wear(features)
     result[TEMPERATURE_DIFFERENCE_COLUMN] = (
         result["Process temperature [K]"] - result["Air temperature [K]"]
     )

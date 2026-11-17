@@ -16,16 +16,17 @@
 \begin{document}
 \begin{center}
 {\Large\bfseries\color{reportblue} Machine Failure Classification}\\[5pt]
-{\large Dataset, Splitting Approach, and Model Comparisons}\\[6pt]
+{\large Dataset, Model Comparisons, and Selected Configuration}\\[6pt]
 \textbf{maintain-predict}\quad |\quad Updated 18 November 2026
 \end{center}
 
 \textbf{Scope.} This report records completed work: dataset inspection and
 exploratory analysis, the agreed target definition, the manually executed data
-split, the initial baselines, and the completed Random Forest and XGBoost
-experiments. All reported model-performance results
-are from the validation partition. No new training was performed to produce
-this report, and the final test partition has not been evaluated.
+split, the initial baselines, Random Forest and XGBoost searches, four
+feature experiments, and the user's model and threshold decisions.
+Training cross-validation and validation results are identified separately.
+No new training was performed to update this report, and the final test
+partition has not been evaluated.
 
 \pagetitle{1. Dataset overview}
 The uploaded AI4I 2020 file is a synthetic predictive-maintenance dataset with
@@ -33,8 +34,8 @@ The uploaded AI4I 2020 file is a synthetic predictive-maintenance dataset with
 measurements, a product category, identifiers, and recorded failure outcomes.
 A row is an observation, not a complete machine maintenance history.
 
-The model uses \textbf{six inputs}: one categorical feature and five numeric
-measurements. Identifiers and outcome annotations are excluded from inputs.
+The raw feature set contains \textbf{six inputs}: one categorical feature
+and five numeric measurements. Derived inputs are examined in Section 8. Identifiers and outcome annotations are excluded from inputs.
 
 \begin{center}
 \begin{tabular}{llr}
@@ -252,7 +253,7 @@ dummy scores give AP equal to validation prevalence, \(54/1500=0.036\).
 The user executed \filepath{scripts/03_random_forest.py} and
 \filepath{scripts/04_xgboost.py}. Both restore the frozen allocation, encode
 Type inside the pipeline, and pass the five numeric sensors through without
-scaling. No new features were introduced.
+scaling. No engineered features were introduced in these initial searches.
 
 \subsection*{5.1 Search and selection procedure}
 Each model searches \textbf{12 configurations using five-fold stratified CV}
@@ -302,7 +303,7 @@ be optimistic. The SD is the population SD across five folds, not a confidence
 interval. These results do not constitute nested CV or a final test estimate.
 
 \newpage
-\pagetitle{6. Validation comparison and interpretation}
+\pagetitle{6. Initial six-input validation comparison}
 All four approaches predict the \textbf{same 1,500 validation observations}:
 54 positive and 1,446 negative derived labels. The classification threshold
 remains \textbf{0.5 for every model}. No threshold has been optimized.
@@ -368,7 +369,7 @@ not establish statistical significance, calibrated risk, or deployment readiness
 No final test performance has been calculated.
 
 \newpage
-\pagetitle{7. Saved validation confusion matrices}
+\pagetitle{7. Initial six-input confusion matrices}
 The positive class means \emph{failure evidence is present}; positive does
 not mean good. A true positive detects a positive label, a false negative
 misses one, and a false positive raises an alarm on a negative label.
@@ -396,25 +397,234 @@ The actual labels are the project's \emph{derived dataset labels}, not
 independently verified physical outcomes. Class-weighted model scores are
 not automatically calibrated real-world failure probabilities.
 
+
 \newpage
-\pagetitle{8. Reproducibility and completion boundary}
+\pagetitle{8. Feature engineering and controlled comparisons}
+After the six-input searches, the user ran three individual feature trials
+and one two-feature combination. All use the same frozen allocation and the
+previously selected XGBoost settings: \textbf{300 rounds, depth 5, and learning
+rate 0.1}. Each version retains all six raw inputs.
+
+\subsection*{8.1 Added features}
+\[
+\begin{aligned}
+\text{Temperature difference [K]} &=
+  \text{Process temperature}-\text{Air temperature},\\
+\text{Power [W]} &= \text{Torque}\times\text{rpm}\times 2\pi/60,\\
+\text{Torque-wear [Nm min]} &= \text{Torque}\times\text{Tool wear}.
+\end{aligned}
+\]
+The factor \(2\pi/60\) converts rpm to radians per second. Torque-wear is an
+interaction feature, not a measurement of physical strain or remaining life.
+These calculations re-express existing sensor information; they add no new
+measurements. They are row-wise, use no labels or fitted statistics, and leave
+the raw CSV unchanged.
+
+\subsection*{8.2 Experimental design}
+Exercises 05, 06, and 07 compare the original six-input model with one added
+feature at a time. Exercise 08 compares \textbf{seven inputs} (raw + torque-wear)
+with \textbf{eight inputs} (raw + torque-wear + temperature difference).
+Power is excluded from this combination.
+
+Each exercise performs five-fold target-stratified CV for both versions on
+training rows only, using the same folds and seed 42. Hyperparameters are
+fixed rather than searched again. Encoding and class weighting fit within
+each training fold. Ten CV fits are followed by one augmented-model refit on
+all training rows. Validation is evaluated at 0.5; the reference validation
+predictions are reused. Earlier model artifacts are preserved.
+
+\subsection*{8.3 Paired training-CV results}
+\begin{center}
+{\small
+\begin{tabular}{lrrrr}
+\toprule
+Variant & Mean AP & Fold SD & Mean gain & Gains \\
+\midrule
+Raw inputs (6) & 0.7165 & 0.0520 & -- & -- \\
++ Temperature diff. & 0.7514 & 0.0319 & +0.0349 & 5/5 \\
++ Power & 0.7453 & 0.0549 & +0.0288 & 4/5 \\
++ Torque-wear & 0.7462 & 0.0383 & +0.0297 & 4/5 \\
++ Torque-wear + temp. & 0.7847 & 0.0323 & +0.0385 & 5/5 \\
+\bottomrule
+\end{tabular}}
+\end{center}
+The first three gains compare each single feature with raw inputs. The final
+gain compares the combination with torque-wear alone. Fold SD is a population
+SD, not a confidence interval. Configuration selection and these feature
+comparisons reuse training CV, so gains are exploratory, not independent
+performance estimates or significance tests.
+
+The combination has the highest training-CV AP. The validation results on
+the next page do not rank the variants in the same order.
+
+\newpage
+\pagetitle{9. Feature-trial validation results}
+All versions predict the same 1,500 validation observations, including 54
+positive labels, at the same threshold 0.5. Input counts below are before
+one-hot encoding.
+
+\begin{center}
+{\small
+\begin{tabular}{lrrrrrr}
+\toprule
+Variant & Inputs & Accuracy & Precision & Recall & F1 & AP \\
+\midrule
+Raw inputs & 6 & 98.07\% & 69.84\% & 81.48\% & 75.21\% & 0.7875 \\
++ Temperature diff. & 7 & 98.33\% & 77.36\% & 75.93\% & 76.64\% & 0.7805 \\
++ Power & 7 & 98.00\% & 69.35\% & 79.63\% & 74.14\% & 0.7752 \\
++ Torque-wear & 7 & 98.40\% & 74.19\% & 85.19\% & 79.31\% & 0.8483 \\
++ Torque-wear + temp. & 8 & 98.40\% & 77.78\% & 77.78\% & 77.78\% & 0.8336 \\
+\bottomrule
+\end{tabular}}
+\end{center}
+
+\begin{center}
+\begin{tabular}{lrrrr}
+\toprule
+Variant & TN & FP & FN & TP \\
+\midrule
+Raw inputs & 1,427 & 19 & 10 & 44 \\
++ Temperature diff. & 1,434 & 12 & 13 & 41 \\
++ Power & 1,427 & 19 & 11 & 43 \\
++ Torque-wear & 1,430 & 16 & 8 & 46 \\
++ Torque-wear + temp. & 1,434 & 12 & 12 & 42 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{Temperature difference alone} reduces false alarms from 19 to 12,
+but detects 41 positives rather than 44. F1 rises, while recall and validation
+AP decline. Its mean training-CV AP improves in all five folds.
+
+\textbf{Power alone} produces the same 19 false alarms as the raw-input model
+and misses one additional positive. Training-CV AP improves in four folds,
+but validation AP and F1 do not improve. Power was not selected.
+
+\textbf{Torque-wear alone} detects two additional positives and produces
+three fewer false alarms than the raw-input model. It has the highest
+validation AP and F1 among these five variants, with 46 detected positives,
+8 missed positives, and 16 false alarms.
+
+\textbf{The two-feature combination} reduces false alarms from 16 to 12
+relative to torque-wear, but misses four additional positives. Compared
+with temperature difference alone, it catches one additional positive with
+the same false-alarm count. Its training-CV AP is highest, while validation
+AP and F1 remain below torque-wear alone.
+
+There is no universal winner across all metrics. Validation was inspected
+repeatedly during this exploration; it is not an independent final test.
+Differences based on a small number of positives do not establish statistical
+significance or performance on future production data.
+
+\newpage
+\pagetitle{10. Feature-trial confusion matrices}
+All plots use the same validation allocation and threshold 0.5.
+
+\begin{center}
+\includegraphics[width=0.47\linewidth]{figures/temperature_difference_confusion_matrix.png}
+\hfill
+\includegraphics[width=0.47\linewidth]{figures/power_confusion_matrix.png}
+
+\vspace{8pt}
+\includegraphics[width=0.47\linewidth]{figures/torque_wear_confusion_matrix.png}
+\hfill
+\includegraphics[width=0.47\linewidth]{figures/combined_confusion_matrix.png}
+
+{\small Top: temperature difference and power. Bottom: torque-wear and
+the torque-wear/temperature-difference combination. Rows are actual labels;
+columns are predictions. Compare counts, since color scales are independent.}
+\end{center}
+
+\textbf{False negative (FN):} predicted no evidence, actual evidence.
+It is a missed positive label. \textbf{False positive (FP):} predicted
+evidence, actual no evidence. It is a false alarm.
+
+The selected torque-wear model has FN=8 and FP=16. The combination has
+FN=12 and FP=12: four fewer false alarms, but four more missed positives.
+These are comparisons against the derived dataset label, not verified
+physical machine outcomes.
+
+\newpage
+\pagetitle{11. Selected model and threshold decision}
+\textbf{User decision: retain XGBoost with seven inputs---six raw inputs
+plus torque \(\times\) tool wear---for the next stage.}
+
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+Input & Role \\
+\midrule
+Type & Categorical raw input \\
+Air temperature [K] & Numeric raw input \\
+Process temperature [K] & Numeric raw input \\
+Rotational speed [rpm] & Numeric raw input \\
+Torque [Nm] & Numeric raw input \\
+Tool wear [min] & Numeric raw input \\
+Torque wear [Nm min] & Torque multiplied by tool wear \\
+\bottomrule
+\end{tabular}
+\end{center}
+Temperature difference and power are excluded from this choice. With three
+Type categories, the seven input columns become nine encoded model columns.
+The configuration remains 300 rounds, depth 5, learning rate 0.1, and
+training positive-class weight 27.
+
+The choice follows review of CV and validation tradeoffs. Relative to the
+combination, torque-wear has higher validation recall, F1, and AP, but lower
+precision and training-CV AP. It is not the CV winner or a statistically
+proven superior model. No operational cost model has been established.
+
+\subsection*{11.1 Threshold retained at 0.5 without tuning}
+The user explicitly chose to retain the default threshold because a specific
+operational objective has not yet been defined. No threshold sweep, search,
+or cost-based optimization was performed:
+\[
+\hat{y} =
+\begin{cases}
+1 & \text{if the model score is at least }0.5,\\
+0 & \text{if the model score is below }0.5.
+\end{cases}
+\]
+This is a retained default, not evidence of an optimal alarm policy. Lower
+thresholds generally produce more alarms and can reduce missed positives;
+higher thresholds produce fewer alarms and can increase missed positives.
+Changing a threshold changes labels derived from scores, not model weights.
+Weighted model scores are not automatically calibrated physical risks.
+
+\subsection*{11.2 Saved model and next work}
+Load the selected classifier from \filepath{artifacts/torque_wear/model.ubj}
+and its preprocessor from
+\filepath{artifacts/torque_wear/preprocessor.skops}. Use
+\filepath{add_torque_wear} to calculate the derived column before inference.
+The decision is documented in \filepath{docs/model_selection.md}.
+
+Plan step 4 is complete for the agreed experiments. Next in step 5 is SHAP
+explanation; it has not been run. Final test evaluation remains pending and
+will occur once the selected configuration and evaluation decisions are fixed.
+
+\newpage
+\pagetitle{12. Reproducibility and completion boundary}
 \begingroup
 \small
 \setlength{\parskip}{4pt}
-\subsection*{8.1 Environment and experiment identifiers}
+\subsection*{12.1 Environment and experiment records}
 Saved summaries record Python 3.14.3, NumPy 2.5.4, pandas 3.1.1,
-scikit-learn 1.9.1, MLflow 3.18.0, and skops 0.16.0. The XGBoost run
-additionally records XGBoost 3.4.1. Local MLflow run IDs are:
+scikit-learn 1.9.1, MLflow 3.18.0, and skops 0.16.0. XGBoost runs record
+XGBoost 3.4.1. Local MLflow identifiers are:
 
 \begin{center}
 \begin{tabular}{ll}
 \toprule
 Approach & Run ID \\
 \midrule
-Always no failure & \texttt{7d06668798524b0585917072719d8841} \\
+Dummy & \texttt{7d06668798524b0585917072719d8841} \\
 Logistic regression & \texttt{457b45c83e8b428b817082227d733b1b} \\
 Random Forest & \texttt{ca74cf52620f4267813e1174c40622eb} \\
-XGBoost & \texttt{25d0be05532d41059145d2adcabaacf8} \\
+Raw inputs & \texttt{25d0be05532d41059145d2adcabaacf8} \\
++ Temperature diff. & \texttt{53d447476aea42c09a21d1fb77cd8f59} \\
++ Power & \texttt{dc47ba8ec99c40ef890f906e778e8863} \\
++ Torque-wear & \texttt{536e8de3290747f094beae06b7eaf443} \\
++ Torque-wear + temp. & \texttt{d23d285dbcd24dd2923a6f97e772dbf9} \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -424,51 +634,40 @@ Source: \filepath{data/ai4i2020.csv}, unchanged. SHA-256:
 dc6630cd9b1f0f853922fad78a1b6436570d3f1ec863f1dd5c4340ac56bc8a8e
 \end{verbatim}
 
-\subsection*{8.2 Evidence and saved artifacts}
-Key evidence files, with paths relative to the project root:
+\subsection*{12.2 Evidence and verification}
+The split manifest and EDA are the same as in Sections 2--3. Manually executed
+scripts 02--08 in \filepath{scripts/} produced the experiments. Source summaries,
+predictions, and CV tables are under \filepath{artifacts/baselines/} and the
+six model/feature folders:
+
 \begin{center}
-{\small
 \begin{tabular}{ll}
-EDA & \filepath{notebooks/01_eda.ipynb} \\
-Target policy & \filepath{docs/target_policy.md} \\
-Split verification & \filepath{docs/split_verification.md} \\
-Frozen allocation & \filepath{data/splits/type_target_seed42.json} \\
-Model factories & \filepath{src/maintain_predict/train.py} \\
-XGBoost weighting & \filepath{src/maintain_predict/xgboost_model.py} \\
-Baseline summary & \filepath{artifacts/baselines/results.json} \\
-RF summary & \filepath{artifacts/random_forest/results.json} \\
-XGBoost summary & \filepath{artifacts/xgboost/results.json} \\
-Comparison & \filepath{artifacts/xgboost/comparison.csv} \\
-\end{tabular}}
+\filepath{random_forest/} & \filepath{xgboost/} \\
+\filepath{temperature_difference/} & \filepath{power/} \\
+\filepath{torque_wear/} & \filepath{torque_wear_temperature_difference/} \\
+\end{tabular}
 \end{center}
-The user ran training exercises 02 (baselines), 03 (Random Forest), and 04
-(XGBoost) in the \filepath{scripts/} folder. Each experiment saves validation
-predictions, metrics, plots, and model artifacts. RF and XGBoost also save
-\filepath{cv_results.csv}.
+Each folder is relative to \filepath{artifacts/}.
 
-Dummy, logistic, and RF models use skops. XGBoost saves its classifier as
-\filepath{model.ubj} and its preprocessing separately as
-\filepath{preprocessor.skops}. Native-model reload and predictions were
-checked on synthetic examples during script verification.
+XGBoost classifiers use native UBJSON models and separately saved preprocessing.
+Feature construction must match the saved schema. A portable copy of the
+source records is saved in \filepath{report/verified_results.json}.
 
-Report verification compared the raw checksum with the manifest and summaries,
-checked validation membership and derived labels, recalculated all four
-metric sets from saved prediction scores, and checked both 12-candidate,
-five-fold CV result files. No models were retrained, no new split was created,
-and no test predictions were generated to update this report.
+Report verification checked source checksums, validation membership and labels,
+all eight sets of metrics against saved scores, and paired CV tables for all
+four feature trials. No models were fitted, no split was regenerated, and no
+test predictions were produced while updating the report.
 
-\subsection*{8.3 Completed scope and remaining limits}
-Completed: dataset inspection, EDA, target-policy documentation, frozen
-splitting, four-way validation comparison, training-only five-fold CV for
-logistic/RF/XGBoost, the two small tree-model searches, and local tracking.
+\subsection*{12.3 Completed scope and outstanding work}
+Completed: EDA, label-policy documentation, frozen splitting, initial baselines,
+tree-model searches, and training CV. The three individual feature trials,
+the requested combination, and local tracking are complete.
+The user selected the model/features and retained threshold 0.5 without tuning.
 
-Not performed: engineered-feature experiments, threshold optimization,
-probability calibration, row-block sensitivity analysis, SHAP explanations,
-final test evaluation, model registration, or deployment.
-
-The evidence remains limited to synthetic data, an assumed target policy,
-one random allocation, and rare positives. Row-order dependence, prior
-whole-file EDA, selection optimism, and competing error costs limit conclusions.
-
+Not performed: threshold optimization, calibration, row-block sensitivity
+analysis, SHAP, final test evaluation, model registration, or deployment.
+The evidence remains limited by synthetic data, an assumed label policy,
+rare positives, one random allocation, row-order dependence, whole-file EDA,
+selection reuse, and repeated validation inspection.
 \endgroup
 \end{document}

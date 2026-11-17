@@ -151,7 +151,7 @@ See `docs/xgboost_guide.md` for the steps, class weighting, and persistence form
 ## Manual temperature-difference exercise
 
 [scripts/05_temperature_difference.py](scripts/05_temperature_difference.py)
-is prepared for you to run. It adds process minus air temperature to the six
+has been run manually. It adds process minus air temperature to the six
 existing XGBoost inputs, preserving the previous hyperparameters. Paired
 training-only five-fold CV compares six versus seven inputs before validation
 evaluation at threshold 0.5.
@@ -160,9 +160,67 @@ evaluation at threshold 0.5.
 .\.venv\Scripts\python.exe .\scripts\05_temperature_difference.py
 ```
 
-Outputs will be saved to `artifacts/temperature_difference/`, separately from
-earlier experiments. The exercise has not been run on the uploaded data.
+Outputs are saved to `artifacts/temperature_difference/`, separately from
+earlier experiments. The exercise has been run manually. Training CV mean AP
+rose from 0.7165 to 0.7514. At threshold 0.5, validation TP=41, FN=13, FP=12,
+TN=1,434; precision=77.36%, recall=75.93%, F1=76.64%, AP=0.7805.
+This variant remains a candidate, not an automatic replacement.
 See `docs/temperature_difference_guide.md` for the comparison and inference steps.
+
+## Manual power exercise
+
+[scripts/06_power.py](scripts/06_power.py) has been run manually. It
+compares six original inputs against six original inputs plus calculated
+mechanical power (torque × rpm × 2π/60). Temperature difference is excluded.
+Hyperparameters, CV folds, and threshold remain unchanged.
+
+```powershell
+.\.venv\Scripts\python.exe .\scripts\06_power.py
+```
+
+Outputs are saved under `artifacts/power/`. Mean training CV AP increased from
+0.7165 to 0.7453, but validation AP fell to 0.7752. At 0.5, TP=43, FN=11,
+FP=19, TN=1,427; precision=69.35%, recall=79.63%, F1=74.14%.
+This variant has not replaced the original model.
+See `docs/power_guide.md` for the comparison and units.
+
+## Manual torque × wear exercise
+
+[scripts/07_torque_wear.py](scripts/07_torque_wear.py) has been run manually.
+It adds only torque × tool wear to the six original inputs, without
+temperature difference or power. It uses the same fixed XGBoost settings,
+paired training-only CV folds, and validation threshold 0.5.
+
+```powershell
+.\.venv\Scripts\python.exe .\scripts\07_torque_wear.py
+```
+
+Outputs are saved under `artifacts/torque_wear/`. Mean training CV AP increased
+from 0.7165 to 0.7462. At 0.5, validation TP=46, FN=8, FP=16, TN=1,430;
+precision=74.19%, recall=85.19%, F1=79.31%, AP=0.8483.
+The user selected this seven-input variant and retained threshold 0.5 without
+tuning. SHAP explanation and final test evaluation remain outstanding. See
+`docs/model_selection.md` for the decision, exact artifacts, and limitations.
+See `docs/torque_wear_guide.md` for details.
+
+## Manual combined-feature exercise
+
+[scripts/08_torque_wear_temperature_difference.py](scripts/08_torque_wear_temperature_difference.py)
+has been run manually. It compares **seven inputs** (six raw + torque-wear)
+against **eight inputs** (six raw + torque-wear + temperature difference).
+Both use the saved torque-wear model's fixed XGBoost parameters, identical
+training CV folds, and threshold 0.5. Power is excluded.
+
+```powershell
+.\.venv\Scripts\python.exe .\scripts\08_torque_wear_temperature_difference.py
+```
+
+Outputs are saved under `artifacts/torque_wear_temperature_difference/`.
+Mean training CV AP increased from 0.7462 to 0.7847. At threshold 0.5,
+validation TP=42, FN=12, FP=12, TN=1,434; precision=77.78%, recall=77.78%,
+F1=77.78%, AP=0.8336. The user chose the seven-input torque-wear variant
+for the next stage after reviewing this tradeoff.
+See `docs/combined_features_guide.md` for the comparison and inference steps.
 
 ## Local API
 
