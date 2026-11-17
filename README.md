@@ -111,13 +111,13 @@ metrics. AP is the selected PR-curve summary, distinct from trapezoidal PR area.
 | --- | --- | --- | --- | --- |
 | Always predict no failure evidence | 0.0360 | Undefined | 0.00% | 0.00% |
 | Logistic regression | 0.5288 | 13.65% | 85.19% | 23.53% |
-| Random forest | Pending | Pending | Pending | Pending |
+| Random forest | 0.7529 | 76.00% | 70.37% | 73.08% |
 | XGBoost | Pending | Pending | Pending | Pending |
 
 ## Manual Random Forest exercise
 
-[scripts/03_random_forest.py](scripts/03_random_forest.py) is prepared for you
-to run. It restores the same split, selects among 12 Random Forest configurations
+[scripts/03_random_forest.py](scripts/03_random_forest.py) has been run manually.
+It restores the same split, selects among 12 Random Forest configurations
 using five-fold training-only CV scored by AP, and evaluates the selected model
 on validation at threshold 0.5. It also scores fresh logistic clones on the
 same training folds as a CV reference. The saved baseline models are preserved.
@@ -126,9 +126,26 @@ same training folds as a CV reference. The saved baseline models are preserved.
 .\.venv\Scripts\python.exe .\scripts\03_random_forest.py
 ```
 
-Results will be saved separately under `artifacts/random_forest/` and tracked
-in local MLflow. This exercise has not been run on the uploaded dataset.
+Results are saved separately under `artifacts/random_forest/` and tracked
+in local MLflow. At 0.5, the model detected 38 of 54 positives, missed 16, and
+raised 12 false alarms. Test performance remains reserved.
 See `docs/random_forest_guide.md` for the numbered steps and search settings.
+
+## Manual XGBoost exercise
+
+[scripts/04_xgboost.py](scripts/04_xgboost.py) is prepared for you to run.
+It restores the same split, selects among 12 configurations using five-fold
+training-only AP, and evaluates validation at threshold 0.5. Positive-class
+weighting is recalculated from the labels in each fitting fold.
+
+```powershell
+.\.venv\Scripts\python.exe .\scripts\04_xgboost.py
+```
+
+XGBoost is already installed in the project environment. Outputs will be saved
+under `artifacts/xgboost/`, including the native `model.ubj` and separately
+saved `preprocessor.skops`. This exercise has not been run on the uploaded data.
+See `docs/xgboost_guide.md` for the steps, class weighting, and persistence format.
 
 ## Local API
 

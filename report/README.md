@@ -1,10 +1,13 @@
 # Baseline report
 
 `baseline_report.tex` is the English LaTeX report of completed dataset analysis,
-target-policy decisions, data splitting, and the executed baseline experiment.
+target-policy decisions, data splitting, and the executed dummy, logistic
+regression, Random Forest, and XGBoost experiments. The 18 November 2026 update
+includes tree-model searches, training-only CV, four-way validation metrics,
+confusion matrices, and the precision/recall tradeoff.
 All model results use the validation set; no final test evaluation is reported.
 
-The `figures/` directory contains copies of the two existing validation
+The `figures/` directory contains copies of the four existing validation
 confusion-matrix PNGs. Keep it beside the LaTeX source when compiling.
 
 From the project root, build the PDF with:

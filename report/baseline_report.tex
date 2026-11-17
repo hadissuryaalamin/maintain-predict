@@ -16,13 +16,14 @@
 \begin{document}
 \begin{center}
 {\Large\bfseries\color{reportblue} Machine Failure Classification}\\[5pt]
-{\large Dataset, Splitting Approach, and Baseline Results}\\[6pt]
-\textbf{maintain-predict}\quad |\quad 17 November 2026
+{\large Dataset, Splitting Approach, and Model Comparisons}\\[6pt]
+\textbf{maintain-predict}\quad |\quad Updated 18 November 2026
 \end{center}
 
 \textbf{Scope.} This report records completed work: dataset inspection and
 exploratory analysis, the agreed target definition, the manually executed data
-split, and the executed scikit-learn baseline experiment. All model results
+split, the initial baselines, and the completed Random Forest and XGBoost
+experiments. All reported model-performance results
 are from the validation partition. No new training was performed to produce
 this report, and the final test partition has not been evaluated.
 
@@ -245,113 +246,229 @@ reported as zero by the evaluation convention. AP summarizes score ranking
 across thresholds; it is not precision at 0.5 or trapezoidal PR area. Constant
 dummy scores give AP equal to validation prevalence, \(54/1500=0.036\).
 
-\newpage
-\pagetitle{5. Confusion matrices and interpretation}
-The positive class means \emph{failure evidence is present}; ``positive'' does
-not mean good. A true positive detects a positive label, a false negative
-misses one, and a false positive is an alarm on a negative label.
 
+\newpage
+\pagetitle{5. Random Forest, XGBoost, and cross-validation}
+The user executed \filepath{scripts/03_random_forest.py} and
+\filepath{scripts/04_xgboost.py}. Both restore the frozen allocation, encode
+Type inside the pipeline, and pass the five numeric sensors through without
+scaling. No new features were introduced.
+
+\subsection*{5.1 Search and selection procedure}
+Each model searches \textbf{12 configurations using five-fold stratified CV}
+inside the 7,000 training rows, scored by sklearn average precision (AP).
+The folds stratify the derived target, shuffle with seed 42, and use the same
+training allocation. The outer split still stratifies Type and target jointly.
+Preprocessing is fitted separately in every fold.
+
+Each search performs 60 CV fits, then refits its selected configuration on all
+training rows. Validation labels do not select these configurations. Validation
+inference uses the fixed threshold 0.5. XGBoost uses no evaluation set or early
+stopping. The RF exercise additionally scores fresh logistic-regression clones
+on the same five training folds; it preserves the original saved baseline.
+
+\subsection*{5.2 Candidate grids and selected settings}
+\textbf{Random Forest:} 100 or 300 trees; maximum depth unrestricted, 8, or 16;
+minimum leaf size 1 or 5. The selected forest uses \textbf{300 trees,
+unrestricted depth, and minimum leaf size 1}. It uses balanced class weighting,
+calculated from the labels available in each fit.
+
+\textbf{XGBoost:} 100 or 300 boosting rounds; maximum depth 2, 3, or 5;
+learning rate 0.03 or 0.1. The selected model uses \textbf{300 rounds,
+depth 5, and learning rate 0.1}. Training uses the binary logistic objective,
+CPU histogram trees, and the internal logloss metric; search selection is AP.
+
+A small XGBoost subclass recomputes
+\(\texttt{scale\_pos\_weight}=n_{\mathrm{negative}}/n_{\mathrm{positive}}\)
+on every fit. CV uses fold-local counts; the final training refit uses
+\(6750/250=27\). Neither validation nor test labels determine class weights.
+
+\subsection*{5.3 Training-only CV results}
 \begin{center}
-\begin{tabular}{llrr}
+\begin{tabular}{lrr}
 \toprule
-Prediction & Actual label & Always no failure & Logistic \\
+Model & Mean AP & Fold SD \\
 \midrule
-No evidence & No evidence (TN) & 1,446 & 1,155 \\
-No evidence & Evidence (FN) & 54 & 8 \\
-Evidence & No evidence (FP) & 0 & 291 \\
-Evidence & Evidence (TP) & 0 & 46 \\
+Logistic regression reference & 0.4048 & 0.0694 \\
+Selected Random Forest & 0.6774 & 0.0794 \\
+Selected XGBoost & 0.7165 & 0.0520 \\
 \bottomrule
 \end{tabular}
 \end{center}
 
-\begin{center}
-\includegraphics[width=0.48\linewidth]{figures/always_no_failure_confusion_matrix.png}
-\hfill
-\includegraphics[width=0.48\linewidth]{figures/logistic_regression_confusion_matrix.png}
-
-{\small Saved validation plots. Rows are actual labels; columns are predictions.}
-\end{center}
-
-The dummy correctly identifies every negative observation but misses all
-54 positives. Logistic regression detects \textbf{46 of 54 positives} and
-misses 8, while generating \textbf{291 false alarms}. It raises 337 alarms
-in total, of which only 46 agree with positive actual labels.
-
-\[
-\begin{aligned}
-\text{Accuracy} &= \frac{TP+TN}{TP+TN+FP+FN}
-                = \frac{46+1155}{1500} = 80.07\%,\\
-\text{Recall} &= \frac{TP}{TP+FN}
-              = \frac{46}{54} = 85.19\%,\\
-\text{Precision} &= \frac{TP}{TP+FP}
-                 = \frac{46}{337} = 13.65\%.
-\end{aligned}
-\]
-
-The learned baseline reduces missed positives from 54 to 8, at the cost of
-291 additional false alarms. Its lower accuracy does not contradict its
-higher recall: the two metrics count different aspects of performance.
-No operational cost assumptions have been established, so this tradeoff
-does not establish readiness for deployment.
-
-These counts are disagreements or agreements with the \emph{derived dataset
-labels}, not independently verified physical machine outcomes. Class-weighted
-scores should not automatically be interpreted as calibrated real-world risks.
+CV scores are distinct from validation scores. For RF and XGBoost, these are
+the best candidate's scores on folds also used for selection, so they can
+be optimistic. The SD is the population SD across five folds, not a confidence
+interval. These results do not constitute nested CV or a final test estimate.
 
 \newpage
-\pagetitle{6. Reproducibility, artifacts, and completion boundary}
-\subsection*{6.1 Recorded environment and experiment identifiers}
-The saved experiment summary records Python 3.14.3, NumPy 2.5.4,
-pandas 3.1.1, scikit-learn 1.9.1, MLflow 3.18.0, and skops 0.16.0.
-Local MLflow tracking stores run metadata and artifacts. The saved run IDs are:
+\pagetitle{6. Validation comparison and interpretation}
+All four approaches predict the \textbf{same 1,500 validation observations}:
+54 positive and 1,446 negative derived labels. The classification threshold
+remains \textbf{0.5 for every model}. No threshold has been optimized.
 
+\begin{center}
+{\small
+\begin{tabular}{lrrrrr}
+\toprule
+Model & Accuracy & Precision & Recall & F1 & AP \\
+\midrule
+Always no failure & 96.40\% & Undefined & 0.00\% & 0.00\% & 0.0360 \\
+Logistic regression & 80.07\% & 13.65\% & 85.19\% & 23.53\% & 0.5288 \\
+Random Forest & 98.13\% & 76.00\% & 70.37\% & 73.08\% & 0.7529 \\
+XGBoost & 98.07\% & 69.84\% & 81.48\% & 75.21\% & 0.7875 \\
+\bottomrule
+\end{tabular}}
+\end{center}
+
+\begin{center}
+\begin{tabular}{lrrrr}
+\toprule
+Model & TN & FP & FN & TP \\
+\midrule
+Always no failure & 1,446 & 0 & 54 & 0 \\
+Logistic regression & 1,155 & 291 & 8 & 46 \\
+Random Forest & 1,434 & 12 & 16 & 38 \\
+XGBoost & 1,427 & 19 & 10 & 44 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{Compared with Random Forest, XGBoost detects six additional positives}
+(44 versus 38) and misses six fewer (10 versus 16), while producing seven
+additional false alarms (19 versus 12).
+
+\textbf{Compared with logistic regression, XGBoost misses two additional
+positives} (10 versus 8), but reduces false alarms by 272 (19 versus 291).
+The dummy detects none of the 54 positives despite its high accuracy.
+
+XGBoost has the highest observed validation F1 and AP. Random Forest has
+the highest precision and accuracy among the learned models; logistic
+regression has the highest recall. Therefore XGBoost is a promising
+candidate for the current precision--recall compromise, rather than an
+unconditional or final winner.
+
+\subsection*{6.1 Why F1 is not accuracy}
+\[
+\begin{aligned}
+\text{Accuracy} &= \frac{TP+TN}{TP+TN+FP+FN},&
+\text{Precision} &= \frac{TP}{TP+FP},\\
+\text{Recall} &= \frac{TP}{TP+FN},&
+F1 &= \frac{2TP}{2TP+FP+FN}.
+\end{aligned}
+\]
+F1 is the harmonic mean of precision and recall; it does not directly count
+true negatives. Different precision--recall pairs can have the same F1.
+Consequently, F1 alone does not describe the missed-failure/false-alarm
+tradeoff or encode operational costs. The confusion matrix and both component
+metrics remain necessary. No operational cost model has been established.
+
+These comparisons apply to one allocation and one fixed threshold. They do
+not establish statistical significance, calibrated risk, or deployment readiness.
+No final test performance has been calculated.
+
+\newpage
+\pagetitle{7. Saved validation confusion matrices}
+The positive class means \emph{failure evidence is present}; positive does
+not mean good. A true positive detects a positive label, a false negative
+misses one, and a false positive raises an alarm on a negative label.
+
+\begin{center}
+\includegraphics[width=0.47\linewidth]{figures/always_no_failure_confusion_matrix.png}
+\hfill
+\includegraphics[width=0.47\linewidth]{figures/logistic_regression_confusion_matrix.png}
+
+\vspace{8pt}
+\includegraphics[width=0.47\linewidth]{figures/random_forest_confusion_matrix.png}
+\hfill
+\includegraphics[width=0.47\linewidth]{figures/xgboost_confusion_matrix.png}
+
+{\small Rows are actual labels; columns are predictions. All plots use the same
+validation rows and threshold 0.5. Counts, rather than color intensity, should
+be compared because each saved plot has its own color scale.}
+\end{center}
+
+The dummy raises no alarms. Logistic regression captures the most positives
+but has many false alarms. Random Forest gives fewer alarms, with more missed
+positives. XGBoost lies between these learned models on both error counts.
+
+The actual labels are the project's \emph{derived dataset labels}, not
+independently verified physical outcomes. Class-weighted model scores are
+not automatically calibrated real-world failure probabilities.
+
+\newpage
+\pagetitle{8. Reproducibility and completion boundary}
+\begingroup
+\small
+\setlength{\parskip}{4pt}
+\subsection*{8.1 Environment and experiment identifiers}
+Saved summaries record Python 3.14.3, NumPy 2.5.4, pandas 3.1.1,
+scikit-learn 1.9.1, MLflow 3.18.0, and skops 0.16.0. The XGBoost run
+additionally records XGBoost 3.4.1. Local MLflow run IDs are:
+
+\begin{center}
 \begin{tabular}{ll}
+\toprule
+Approach & Run ID \\
+\midrule
 Always no failure & \texttt{7d06668798524b0585917072719d8841} \\
 Logistic regression & \texttt{457b45c83e8b428b817082227d733b1b} \\
+Random Forest & \texttt{ca74cf52620f4267813e1174c40622eb} \\
+XGBoost & \texttt{25d0be05532d41059145d2adcabaacf8} \\
+\bottomrule
 \end{tabular}
+\end{center}
 
-The unchanged source file, \filepath{data/ai4i2020.csv}, has SHA-256:
+Source: \filepath{data/ai4i2020.csv}, unchanged. SHA-256:
 \begin{verbatim}
 dc6630cd9b1f0f853922fad78a1b6436570d3f1ec863f1dd5c4340ac56bc8a8e
 \end{verbatim}
 
-\subsection*{6.2 Evidence files}
-All paths below are relative to the project root.
-\begin{itemize}
-\item \filepath{notebooks/01_eda.ipynb}: executed exploratory analysis.
-\item \filepath{docs/target_policy.md}: agreed label definition and limitations.
-\item \filepath{docs/split_verification.md}: allocation checks and stratum counts.
-\item \filepath{data/splits/type_target_seed42.json}: frozen row membership.
-\item \filepath{src/maintain_predict/train.py}: unfitted pipeline factory.
-\item \filepath{scripts/02_baselines.py}: manually executed training exercise.
-\item \filepath{artifacts/baselines/results.json}: metrics, environment, run IDs,
-target policy, source checksum, and explicit \texttt{test\_evaluated=false}.
-\item \filepath{artifacts/baselines/comparison.csv}: comparison of validation metrics.
-\end{itemize}
+\subsection*{8.2 Evidence and saved artifacts}
+Key evidence files, with paths relative to the project root:
+\begin{center}
+{\small
+\begin{tabular}{ll}
+EDA & \filepath{notebooks/01_eda.ipynb} \\
+Target policy & \filepath{docs/target_policy.md} \\
+Split verification & \filepath{docs/split_verification.md} \\
+Frozen allocation & \filepath{data/splits/type_target_seed42.json} \\
+Model factories & \filepath{src/maintain_predict/train.py} \\
+XGBoost weighting & \filepath{src/maintain_predict/xgboost_model.py} \\
+Baseline summary & \filepath{artifacts/baselines/results.json} \\
+RF summary & \filepath{artifacts/random_forest/results.json} \\
+XGBoost summary & \filepath{artifacts/xgboost/results.json} \\
+Comparison & \filepath{artifacts/xgboost/comparison.csv} \\
+\end{tabular}}
+\end{center}
+The user ran training exercises 02 (baselines), 03 (Random Forest), and 04
+(XGBoost) in the \filepath{scripts/} folder. Each experiment saves validation
+predictions, metrics, plots, and model artifacts. RF and XGBoost also save
+\filepath{cv_results.csv}.
 
-Each baseline subfolder also contains \filepath{model.skops},
-\filepath{validation_predictions.csv}, \filepath{validation_metrics.json},
-and saved confusion-matrix and precision--recall plots.
+Dummy, logistic, and RF models use skops. XGBoost saves its classifier as
+\filepath{model.ubj} and its preprocessing separately as
+\filepath{preprocessor.skops}. Native-model reload and predictions were
+checked on synthetic examples during script verification.
 
-Report verification checked the raw-file checksum against both the manifest
-and experiment summary, recalculated the partition positive counts, and
-reconstructed both confusion matrices from saved predictions. No models were
-refitted, no split was regenerated, and no test predictions were generated.
+Report verification compared the raw checksum with the manifest and summaries,
+checked validation membership and derived labels, recalculated all four
+metric sets from saved prediction scores, and checked both 12-candidate,
+five-fold CV result files. No models were retrained, no new split was created,
+and no test predictions were generated to update this report.
 
-\subsection*{6.3 What is and is not complete}
-Dataset inspection, EDA, target-policy documentation, stratified splitting,
-the dummy baseline, balanced logistic-regression training, validation
-evaluation, and local experiment tracking are complete.
+\subsection*{8.3 Completed scope and remaining limits}
+Completed: dataset inspection, EDA, target-policy documentation, frozen
+splitting, four-way validation comparison, training-only five-fold CV for
+logistic/RF/XGBoost, the two small tree-model searches, and local tracking.
 
-This report makes no claims about completed cross-validation, random-forest
-or XGBoost comparisons, engineered-feature experiments, threshold optimization,
+Not performed: engineered-feature experiments, threshold optimization,
 probability calibration, row-block sensitivity analysis, SHAP explanations,
-final test performance, model registration, or deployment. These activities
-have not been performed in the reported baseline experiment.
+final test evaluation, model registration, or deployment.
 
-The current evidence is limited to a synthetic dataset, an assumed label
-policy, and one stratified random allocation. Strong row-order dependence,
-rare positive examples, prior whole-file EDA, and a substantial false-alarm
-count limit broader conclusions.
+The evidence remains limited to synthetic data, an assumed target policy,
+one random allocation, and rare positives. Row-order dependence, prior
+whole-file EDA, selection optimism, and competing error costs limit conclusions.
 
+\endgroup
 \end{document}

@@ -65,3 +65,40 @@ def make_random_forest_search(*, random_state: int = DEFAULT_RANDOM_STATE) -> Gr
         cv=StratifiedKFold(n_splits=5, shuffle=True, random_state=random_state),
         refit=True, n_jobs=1, error_score="raise", verbose=1,
     )
+
+
+def make_xgboost_pipeline(
+    *, random_state: int = DEFAULT_RANDOM_STATE, n_jobs: int = 2
+) -> Pipeline:
+    """Prepare CPU XGBoost; positive weighting is fitted inside each fold."""
+    from maintain_predict.xgboost_model import FoldWeightedXGBClassifier
+
+    numeric_columns = [column for column in FEATURE_COLUMNS if column != "Type"]
+    preprocessing = ColumnTransformer([
+        ("type", OneHotEncoder(handle_unknown="ignore"), ["Type"]),
+        ("sensors", "passthrough", numeric_columns),
+    ], remainder="drop")
+    return Pipeline([
+        ("preprocess", preprocessing),
+        ("model", FoldWeightedXGBClassifier(
+            objective="binary:logistic", eval_metric="logloss",
+            tree_method="hist", device="cpu",
+            n_estimators=100, max_depth=3, learning_rate=0.1,
+            random_state=random_state, n_jobs=n_jobs,
+        )),
+    ])
+
+
+def make_xgboost_search(*, random_state: int = DEFAULT_RANDOM_STATE) -> GridSearchCV:
+    """Prepare 12 candidates and training-only five-fold average precision."""
+    return GridSearchCV(
+        estimator=make_xgboost_pipeline(random_state=random_state),
+        param_grid={
+            "model__n_estimators": [100, 300],
+            "model__max_depth": [2, 3, 5],
+            "model__learning_rate": [0.03, 0.1],
+        },
+        scoring="average_precision",
+        cv=StratifiedKFold(n_splits=5, shuffle=True, random_state=random_state),
+        refit=True, n_jobs=1, error_score="raise", verbose=1,
+    )
