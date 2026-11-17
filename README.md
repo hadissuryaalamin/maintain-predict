@@ -112,7 +112,7 @@ metrics. AP is the selected PR-curve summary, distinct from trapezoidal PR area.
 | Always predict no failure evidence | 0.0360 | Undefined | 0.00% | 0.00% |
 | Logistic regression | 0.5288 | 13.65% | 85.19% | 23.53% |
 | Random forest | 0.7529 | 76.00% | 70.37% | 73.08% |
-| XGBoost | Pending | Pending | Pending | Pending |
+| XGBoost | 0.7875 | 69.84% | 81.48% | 75.21% |
 
 ## Manual Random Forest exercise
 
@@ -133,7 +133,7 @@ See `docs/random_forest_guide.md` for the numbered steps and search settings.
 
 ## Manual XGBoost exercise
 
-[scripts/04_xgboost.py](scripts/04_xgboost.py) is prepared for you to run.
+[scripts/04_xgboost.py](scripts/04_xgboost.py) has been run manually.
 It restores the same split, selects among 12 configurations using five-fold
 training-only AP, and evaluates validation at threshold 0.5. Positive-class
 weighting is recalculated from the labels in each fitting fold.
@@ -142,10 +142,27 @@ weighting is recalculated from the labels in each fitting fold.
 .\.venv\Scripts\python.exe .\scripts\04_xgboost.py
 ```
 
-XGBoost is already installed in the project environment. Outputs will be saved
+XGBoost is already installed in the project environment. Outputs are saved
 under `artifacts/xgboost/`, including the native `model.ubj` and separately
-saved `preprocessor.skops`. This exercise has not been run on the uploaded data.
+saved `preprocessor.skops`. At threshold 0.5 it detected 44 of 54 positives,
+missed 10, and raised 19 false alarms. Final test evaluation remains reserved.
 See `docs/xgboost_guide.md` for the steps, class weighting, and persistence format.
+
+## Manual temperature-difference exercise
+
+[scripts/05_temperature_difference.py](scripts/05_temperature_difference.py)
+is prepared for you to run. It adds process minus air temperature to the six
+existing XGBoost inputs, preserving the previous hyperparameters. Paired
+training-only five-fold CV compares six versus seven inputs before validation
+evaluation at threshold 0.5.
+
+```powershell
+.\.venv\Scripts\python.exe .\scripts\05_temperature_difference.py
+```
+
+Outputs will be saved to `artifacts/temperature_difference/`, separately from
+earlier experiments. The exercise has not been run on the uploaded data.
+See `docs/temperature_difference_guide.md` for the comparison and inference steps.
 
 ## Local API
 

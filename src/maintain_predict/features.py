@@ -14,6 +14,7 @@ SOURCE_TARGET_COLUMN = "Machine failure"
 FAILURE_FLAG_COLUMNS = ("TWF", "HDF", "PWF", "OSF", "RNF")
 TARGET_COLUMN = "Failure evidence"
 TARGET_POLICY = "failure_evidence_or_v1"
+TEMPERATURE_DIFFERENCE_COLUMN = "Temperature difference [K]"
 
 
 def derive_failure_target(readings: pd.DataFrame) -> pd.Series:
@@ -38,3 +39,16 @@ def select_features_and_target(
     Outcome flags help define the label; they are never predictor inputs.
     """
     return readings.loc[:, list(FEATURE_COLUMNS)], derive_failure_target(readings)
+
+
+def add_temperature_difference(features: pd.DataFrame) -> pd.DataFrame:
+    """Keep six allowed inputs and append process minus air temperature.
+
+    This is a deterministic row-wise calculation with no fitted statistics.
+    Never mutate the source or carry outcome columns into model inputs.
+    """
+    result = features.loc[:, list(FEATURE_COLUMNS)].copy()
+    result[TEMPERATURE_DIFFERENCE_COLUMN] = (
+        result["Process temperature [K]"] - result["Air temperature [K]"]
+    )
+    return result

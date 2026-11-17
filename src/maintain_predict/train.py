@@ -8,7 +8,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 from maintain_predict.data import DEFAULT_RANDOM_STATE
-from maintain_predict.features import FEATURE_COLUMNS
+from maintain_predict.features import FEATURE_COLUMNS, TEMPERATURE_DIFFERENCE_COLUMN
 
 
 def make_logistic_pipeline(*, random_state: int = DEFAULT_RANDOM_STATE) -> Pipeline:
@@ -68,12 +68,15 @@ def make_random_forest_search(*, random_state: int = DEFAULT_RANDOM_STATE) -> Gr
 
 
 def make_xgboost_pipeline(
-    *, random_state: int = DEFAULT_RANDOM_STATE, n_jobs: int = 2
+    *, random_state: int = DEFAULT_RANDOM_STATE, n_jobs: int = 2,
+    include_temperature_difference: bool = False,
 ) -> Pipeline:
     """Prepare CPU XGBoost; positive weighting is fitted inside each fold."""
     from maintain_predict.xgboost_model import FoldWeightedXGBClassifier
 
     numeric_columns = [column for column in FEATURE_COLUMNS if column != "Type"]
+    if include_temperature_difference:
+        numeric_columns.append(TEMPERATURE_DIFFERENCE_COLUMN)
     preprocessing = ColumnTransformer([
         ("type", OneHotEncoder(handle_unknown="ignore"), ["Type"]),
         ("sensors", "passthrough", numeric_columns),
