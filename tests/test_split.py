@@ -1,8 +1,12 @@
+import hashlib
+import json
+from unittest.mock import patch
+
 import pandas as pd
 import pytest
 
-from maintain_predict.data import split_readings
-from maintain_predict.features import FAILURE_FLAG_COLUMNS, select_features_and_target
+from maintain_predict.data import load_saved_splits, split_readings
+from maintain_predict.features import FAILURE_FLAG_COLUMNS, TARGET_COLUMN, TARGET_POLICY, select_features_and_target
 
 
 @pytest.fixture
@@ -77,3 +81,99 @@ def test_split_explains_when_joint_strata_are_too_small(synthetic_readings):
     tiny = synthetic_readings.groupby(["Type", "Machine failure"]).head(1)
     with pytest.raises(ValueError, match="each joint stratum"):
         split_readings(tiny)
+
+
+@pytest.fixture
+def saved_allocation(tmp_path, synthetic_readings):
+    source_path = tmp_path / "readings.csv"
+    synthetic_readings.to_csv(source_path, index=False)
+    # Match the source CSV's parsed numeric values and zero-based row indices.
+    source = pd.read_csv(source_path)
+    expected = split_readings(source)
+    manifest = {
+        "schema_version": 1,
+        "source_sha256": hashlib.sha256(source_path.read_bytes()).hexdigest(),
+        "random_state": 42,
+        "target_policy": TARGET_POLICY,
+        "stratify": ["Type", TARGET_COLUMN],
+        "tool_wear_stratum": False,
+        "fractions": {"train": 0.70, "validation": 0.15, "test": 0.15},
+        "partitions": {
+            name: {"source_row_indices": part.index.tolist(), "udi": part["UDI"].tolist()}
+            for name, part in expected.as_dict().items()
+        },
+    }
+    manifest_path = tmp_path / "split.json"
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    return source_path, manifest_path, expected
+
+
+def test_saved_split_loader_reuses_indices_without_resplitting(saved_allocation):
+    source_path, manifest_path, expected = saved_allocation
+    before_source, before_manifest = source_path.read_bytes(), manifest_path.read_bytes()
+    with patch("maintain_predict.data.train_test_split", side_effect=AssertionError("Must not resplit")):
+        actual = load_saved_splits(source_path, manifest_path)
+    for name, part in expected.as_dict().items():
+        pd.testing.assert_frame_equal(actual.as_dict()[name], part)
+    assert source_path.read_bytes() == before_source
+    assert manifest_path.read_bytes() == before_manifest
+
+
+def test_saved_split_loader_rejects_a_changed_csv(saved_allocation):
+    source_path, manifest_path, _ = saved_allocation
+    source_path.write_bytes(source_path.read_bytes() + b"\n")
+    with pytest.raises(ValueError, match="checksum"):
+        load_saved_splits(source_path, manifest_path)
+
+
+@pytest.mark.parametrize(
+    ("key", "value"), [("target_policy", "different_policy"), ("tool_wear_stratum", True)]
+)
+def test_saved_split_loader_rejects_another_protocol(saved_allocation, key, value):
+    source_path, manifest_path, _ = saved_allocation
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest[key] = value
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    with pytest.raises(ValueError, match="agreed split and target policy"):
+        load_saved_splits(source_path, manifest_path)
+
+
+def test_saved_split_loader_rejects_cross_partition_overlap(saved_allocation):
+    source_path, manifest_path, _ = saved_allocation
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    train, validation = [manifest["partitions"][name] for name in ["train", "validation"]]
+    validation["source_row_indices"][0] = train["source_row_indices"][0]
+    validation["udi"][0] = train["udi"][0]
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    with pytest.raises(ValueError, match="overlapping"):
+        load_saved_splits(source_path, manifest_path)
+
+
+def test_saved_split_loader_rejects_a_wrong_record_identity(saved_allocation):
+    source_path, manifest_path, _ = saved_allocation
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["partitions"]["train"]["udi"][0] = -1
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    with pytest.raises(ValueError, match="UDI values"):
+        load_saved_splits(source_path, manifest_path)
+
+
+def test_saved_split_loader_rejects_missing_rows(saved_allocation):
+    source_path, manifest_path, _ = saved_allocation
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["partitions"]["test"]["source_row_indices"].pop()
+    manifest["partitions"]["test"]["udi"].pop()
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    with pytest.raises(ValueError, match="cover every"):
+        load_saved_splits(source_path, manifest_path)
+
+
+def test_saved_split_loader_rejects_wrong_partition_sizes(saved_allocation):
+    source_path, manifest_path, _ = saved_allocation
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    train, validation = [manifest["partitions"][name] for name in ["train", "validation"]]
+    validation["source_row_indices"].append(train["source_row_indices"].pop())
+    validation["udi"].append(train["udi"].pop())
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    with pytest.raises(ValueError, match="partition sizes"):
+        load_saved_splits(source_path, manifest_path)

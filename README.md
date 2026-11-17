@@ -2,7 +2,8 @@
 
 Estimate machine failure risk from product type and operating measurements. The
 first milestone is to compare a no-failure baseline, logistic regression, random
-forest, and XGBoost on a held-out test set.
+forest, and XGBoost on validation data, reserving a held-out test set for the
+final model evaluation.
 
 ## Setup
 
@@ -61,13 +62,14 @@ failure-mode flags. Section 8 audits those source annotations, documents the
 chosen target policy, and compares the original and derived labels. The active
 class-balance and outcome-grouped plots use `Failure evidence`. The notebook
 explores the full file; this must be disclosed in later evaluation. Splitting
-the data and training baselines are the next stage.
+and baseline training have since been completed.
 
 ## Manual split exercise
 
-Read [scripts/01_split_data.py](scripts/01_split_data.py) and run its seven
-numbered steps yourself. The exercise is prepared and has not been executed on
-the uploaded dataset. It uses a fixed 70/15/15 split stratified jointly by
+The seven-step [split exercise](scripts/01_split_data.py) has been run manually.
+The saved allocation was verified: 7,000 training rows (250 positives), 1,500
+validation rows (54 positives), and 1,500 test rows (53 positives), with no
+overlap. It uses a fixed 70/15/15 split stratified jointly by
 `Type × Failure evidence`; tool wear is not an additional splitting group.
 
 From the repository root in PowerShell, using the prepared project environment:
@@ -77,18 +79,56 @@ From the repository root in PowerShell, using the prepared project environment:
 ```
 
 The script prints allocation and wear-balance tables, checks row overlap, and
-with `SAVE_SPLIT=True` saves `data/splits/type_target_seed42.json`. It does not
-fit preprocessing, train a model, or calculate test performance. The baseline
-comparison remains a later exercise.
+with `SAVE_SPLIT=True` saves `data/splits/type_target_seed42.json`. Re-running it
+with the same source, policy, and seed verifies that the manifest matches. It
+does not fit preprocessing, train a model, or calculate test performance. The
+baseline comparison has also been run manually.
+
+## Manual baseline exercise
+
+[scripts/02_baselines.py](scripts/02_baselines.py) has been run manually.
+It restores the saved split, fits an always-negative classifier and balanced
+logistic regression on training rows, and compares them on validation rows at
+the fixed 0.5 threshold. Encoding and scaling are learned inside the training
+pipeline. It does not generate a new split or evaluate final test performance.
+
+```powershell
+.\.venv\Scripts\python.exe .\scripts\02_baselines.py
+```
+
+Local metrics, plots, validation predictions, and skops models are saved under
+`artifacts/baselines/`; MLflow runs use `mlflow.db` and `mlruns/`. This exercise
+has been executed on the uploaded dataset. The numbered script cells
+explain the fitting and prediction steps. See the guide in
+`docs/baseline_guide.md` for metric definitions and expected sanity checks.
 
 ## Results
 
-| Model | PR-AUC | Precision | Recall | F1 |
+The completed baseline results below use validation average precision (AP), not final test
+metrics. AP is the selected PR-curve summary, distinct from trapezoidal PR area.
+
+| Model | Validation AP | Precision | Recall | F1 |
 | --- | --- | --- | --- | --- |
-| Always predict no failure | Pending | Pending | Pending | Pending |
-| Logistic regression | Pending | Pending | Pending | Pending |
+| Always predict no failure evidence | 0.0360 | Undefined | 0.00% | 0.00% |
+| Logistic regression | 0.5288 | 13.65% | 85.19% | 23.53% |
 | Random forest | Pending | Pending | Pending | Pending |
 | XGBoost | Pending | Pending | Pending | Pending |
+
+## Manual Random Forest exercise
+
+[scripts/03_random_forest.py](scripts/03_random_forest.py) is prepared for you
+to run. It restores the same split, selects among 12 Random Forest configurations
+using five-fold training-only CV scored by AP, and evaluates the selected model
+on validation at threshold 0.5. It also scores fresh logistic clones on the
+same training folds as a CV reference. The saved baseline models are preserved.
+
+```powershell
+.\.venv\Scripts\python.exe .\scripts\03_random_forest.py
+```
+
+Results will be saved separately under `artifacts/random_forest/` and tracked
+in local MLflow. This exercise has not been run on the uploaded dataset.
+See `docs/random_forest_guide.md` for the numbered steps and search settings.
 
 ## Local API
 
