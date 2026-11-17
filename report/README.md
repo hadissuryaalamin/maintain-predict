@@ -9,11 +9,17 @@ It records the user's choice of seven-input XGBoost with torque × wear and
 retention of threshold 0.5 without tuning. Training CV and validation results
 are identified separately; no final test evaluation is reported.
 
-The `figures/` directory contains copies of the eight existing validation
-confusion-matrix PNGs. Keep it beside the LaTeX source when compiling.
+The report now includes completed validation SHAP: grouped global importance,
+the encoded-feature beeswarm, and TP/FN/FP/TN waterfall examples. It explains
+log-odds, direction versus prediction correctness, and the different color
+meanings in beeswarm and waterfall plots.
+
+The `figures/` directory contains eight validation confusion matrices and six
+SHAP plots copied from the saved runs. Keep it beside the LaTeX source when
+compiling.
 
 `verified_results.json` records the source summaries used for the update,
-the selected model, and threshold policy. The LaTeX source is directly editable;
+the selected model, threshold policy, and SHAP run metadata. The source is directly editable;
 recompilation does not require the original model artifacts.
 
 From the project root, build the PDF with:

@@ -16,14 +16,15 @@
 \begin{document}
 \begin{center}
 {\Large\bfseries\color{reportblue} Machine Failure Classification}\\[5pt]
-{\large Dataset, Model Comparisons, and Selected Configuration}\\[6pt]
+{\large Dataset, Model Comparisons, and SHAP Explanations}\\[6pt]
 \textbf{maintain-predict}\quad |\quad Updated 18 November 2026
 \end{center}
 
 \textbf{Scope.} This report records completed work: dataset inspection and
 exploratory analysis, the agreed target definition, the manually executed data
 split, the initial baselines, Random Forest and XGBoost searches, four
-feature experiments, and the user's model and threshold decisions.
+feature experiments, the user's model and threshold decisions, and SHAP
+explanations of the retained model on validation.
 Training cross-validation and validation results are identified separately.
 No new training was performed to update this report, and the final test
 partition has not been evaluated.
@@ -598,76 +599,209 @@ and its preprocessor from
 \filepath{add_torque_wear} to calculate the derived column before inference.
 The decision is documented in \filepath{docs/model_selection.md}.
 
-Plan step 4 is complete for the agreed experiments. Next in step 5 is SHAP
-explanation; it has not been run. Final test evaluation remains pending and
-will occur once the selected configuration and evaluation decisions are fixed.
+Plan step 4 is complete for the agreed experiments. Validation SHAP is now
+complete and reported in Sections 12--15. Final test evaluation remains
+pending; no test predictions or explanations have been generated.
+
 
 \newpage
-\pagetitle{12. Reproducibility and completion boundary}
-\begingroup
-\small
-\setlength{\parskip}{4pt}
-\subsection*{12.1 Environment and experiment records}
-Saved summaries record Python 3.14.3, NumPy 2.5.4, pandas 3.1.1,
-scikit-learn 1.9.1, MLflow 3.18.0, and skops 0.16.0. XGBoost runs record
-XGBoost 3.4.1. Local MLflow identifiers are:
+\pagetitle{12. SHAP method and global feature contributions}
+The user executed \filepath{scripts/09_shap.py} on the selected seven-input
+XGBoost model. \textbf{All 1,500 validation rows} were explained; the classifier
+and preprocessor were loaded without fitting. Threshold 0.5 was retained.
+
+SHAP means \textbf{SHapley Additive exPlanations}. TreeExplainer used exact
+tree-path-dependent explanations, with reference path statistics already
+stored in the fitted trees. Raw XGBoost contributions are in \textbf{log-odds}:
+\[
+m(x)=b+\sum_j\phi_j(x),\qquad
+s(x)=\frac{1}{1+\exp[-m(x)]}.
+\]
+Here \(b\) is the SHAP baseline, \(\phi_j\) is a feature contribution, \(m(x)\)
+is the raw model margin, and \(s(x)\) is the model score. Contributions are not
+additive probability percentages. The baseline is not the dummy classifier,
+threshold 0.5, or the dataset's failure rate.
+
+\begin{center}
+\includegraphics[width=0.82\linewidth]{figures/shap_global_importance.png}
+\end{center}
+
+\begin{center}
+{\small
+\begin{tabular}{rlr}
+\toprule
+Rank & Feature & Mean absolute SHAP \\
+\midrule
+1 & Rotational speed [rpm] & 1.433 \\
+2 & Torque [Nm] & 1.368 \\
+3 & Air temperature [K] & 1.193 \\
+4 & Tool wear [min] & 1.134 \\
+5 & Torque wear [Nm min] & 1.053 \\
+6 & Process temperature [K] & 0.463 \\
+7 & Type & 0.222 \\
+\bottomrule
+\end{tabular}}
+\end{center}
+Mean absolute values summarize magnitude, not direction. They average over
+all validation rows, most of which have negative labels. Type is a post-hoc
+signed sum of its three encoded indicator contributions; absolute values
+are taken after that sum. This preserves additivity, but is not a separately
+recomputed grouped Shapley game.
+
+\newpage
+\pagetitle{13. Reading the beeswarm}
+\begin{center}
+\includegraphics[width=0.98\linewidth]{figures/shap_beeswarm_encoded.png}
+\end{center}
+
+Each dot represents one validation observation for one encoded feature.
+The nine rows include three Type indicators and the six numeric inputs,
+including torque-wear.
 
 \begin{center}
 \begin{tabular}{ll}
 \toprule
-Approach & Run ID \\
+Visual element & Meaning in this beeswarm \\
 \midrule
-Dummy & \texttt{7d06668798524b0585917072719d8841} \\
-Logistic regression & \texttt{457b45c83e8b428b817082227d733b1b} \\
-Random Forest & \texttt{ca74cf52620f4267813e1174c40622eb} \\
-Raw inputs & \texttt{25d0be05532d41059145d2adcabaacf8} \\
-+ Temperature diff. & \texttt{53d447476aea42c09a21d1fb77cd8f59} \\
-+ Power & \texttt{dc47ba8ec99c40ef890f906e778e8863} \\
-+ Torque-wear & \texttt{536e8de3290747f094beae06b7eaf443} \\
-+ Torque-wear + temp. & \texttt{d23d285dbcd24dd2923a6f97e772dbf9} \\
+Right of zero & Raises the score for failure evidence (class 1) \\
+Left of zero & Lowers the score for failure evidence (class 1) \\
+Farther from zero & Larger contribution magnitude for that observation \\
+At zero & No contribution; not a prediction of class 0 \\
+Red dot & Higher input value for that encoded feature \\
+Blue dot & Lower input value for that encoded feature \\
 \bottomrule
 \end{tabular}
 \end{center}
 
-Source: \filepath{data/ai4i2020.csv}, unchanged. SHA-256:
+\textbf{Direction is not correctness.} A right-hand dot does not mean an
+incorrect prediction, and a left-hand dot does not mean a correct prediction.
+Correctness requires comparing the final thresholded score with the actual
+label. Red also does not automatically mean higher failure risk: input value
+and contribution direction are separate visual dimensions.
+
+In this validation view, many high-speed red points are left of zero, while
+many low-speed blue points are right of zero. This is not a universal
+monotonic rule. UDI 195, discussed next, has speed 2,678 rpm but a positive
+speed contribution of approximately \(+2.613\).
+
+Global attribution is not the effect of deleting a feature. Torque-wear's
+fifth-place rank does not contradict its useful feature-trial results.
+Torque, wear, and their product are dependent, and explanatory credit depends
+on the fitted model and reference assumptions. These plots explain model
+behavior, not physical causes or maintenance interventions.
+
+\newpage
+\pagetitle{14. Local examples: detected and missed positives}
+Examples are the smallest source-row index in each outcome category. They
+are illustrative cases, not a random sample or a new performance estimate.
+Waterfall positions show cumulative margins: read the signed contributions
+and arrow directions, not just each bar's absolute position relative to zero.
+
+\textbf{True positive: UDI 195.}
+Score \(0.696\), actual label 1, predicted label 1.
+\begin{center}
+\includegraphics[width=0.82\linewidth]{figures/shap_TP.png}
+\end{center}
+Torque contributes \(+2.713\) and speed \(+2.613\) log-odds, outweighing
+negative contributions from the other features. The final margin is \(0.827\);
+the score exceeds 0.5, and the predicted positive agrees with the label.
+
+\textbf{False negative: UDI 1683.}
+Score \(0.073\), actual label 1, predicted label 0.
+\begin{center}
+\includegraphics[width=0.82\linewidth]{figures/shap_FN.png}
+\end{center}
+Tool wear of 225 min contributes \(+3.013\), but negative contributions from
+air temperature, speed, torque, and the remaining features outweigh it.
+The final margin is \(-2.546\), so the positive label is missed.
+
+\newpage
+\pagetitle{15. Local examples: false alarm and correct negative}
+In waterfalls, \textbf{red means a positive contribution} and \textbf{blue
+means a negative contribution}. Unlike beeswarm colors, these colors describe
+contribution direction rather than the raw feature value.
+
+\textbf{False positive: UDI 1591.}
+Score \(0.765\), actual label 0, predicted label 1.
+\begin{center}
+\includegraphics[width=0.82\linewidth]{figures/shap_FP.png}
+\end{center}
+Tool wear of 207 min contributes \(+2.623\), while air temperature contributes
+\(-1.583\). The total margin remains positive at \(1.179\), so the model raises
+an alarm on a negative actual label. SHAP reconstructs this model decision;
+it does not establish a physical cause for the false alarm.
+
+\textbf{True negative: UDI 3.}
+Score \(0.000823\), actual label 0, predicted label 0.
+\begin{center}
+\includegraphics[width=0.82\linewidth]{figures/shap_TN.png}
+\end{center}
+Tool wear, air temperature, speed, torque, and other features make mostly
+negative contributions. The margin is \(-7.102\), producing a very low score.
+The prediction agrees with the negative actual label.
+
+\newpage
+\pagetitle{16. Reproducibility and completion boundary}
+\begingroup
+\small
+\setlength{\parskip}{4pt}
+\subsection*{16.1 Environment and experiment records}
+Saved summaries record Python 3.14.3, NumPy 2.5.4, pandas 3.1.1,
+scikit-learn 1.9.1, MLflow 3.18.0, and skops 0.16.0. XGBoost runs use
+XGBoost 3.4.1; the explanation run adds SHAP 0.54.1.
+
+\begin{center}
+\begin{tabular}{ll}
+\toprule
+Approach & MLflow run ID \\
+\midrule
+Dummy & \texttt{7d06668798524b0585917072719d8841} \\
+Logistic regression & \texttt{457b45c83e8b428b817082227d733b1b} \\
+Random Forest & \texttt{ca74cf52620f4267813e1174c40622eb} \\
+XGBoost (6 inputs) & \texttt{25d0be05532d41059145d2adcabaacf8} \\
++ Temperature diff. & \texttt{53d447476aea42c09a21d1fb77cd8f59} \\
++ Power & \texttt{dc47ba8ec99c40ef890f906e778e8863} \\
++ Torque-wear (selected) & \texttt{536e8de3290747f094beae06b7eaf443} \\
++ Torque-wear + temp. & \texttt{d23d285dbcd24dd2923a6f97e772dbf9} \\
+Validation SHAP & \texttt{ca1268cdfe0543488e703d7531e280ae} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Unchanged source: \filepath{data/ai4i2020.csv}. SHA-256:
 \begin{verbatim}
 dc6630cd9b1f0f853922fad78a1b6436570d3f1ec863f1dd5c4340ac56bc8a8e
 \end{verbatim}
 
-\subsection*{12.2 Evidence and verification}
-The split manifest and EDA are the same as in Sections 2--3. Manually executed
-scripts 02--08 in \filepath{scripts/} produced the experiments. Source summaries,
-predictions, and CV tables are under \filepath{artifacts/baselines/} and the
-six model/feature folders:
+\subsection*{16.2 Saved evidence and checks}
+Scripts 02--08 produced the model experiments; script 09 produced validation
+SHAP without refitting. All original experiment artifacts remain under
+\filepath{artifacts/}. The selected model is still in
+\filepath{artifacts/torque_wear/}. The explanation pointer is
+\filepath{artifacts/shap/latest.json}; each explanation run has its own folder.
+The portable summary in \filepath{report/verified_results.json} includes the
+model experiments, SHAP metadata, and selected threshold policy.
 
-\begin{center}
-\begin{tabular}{ll}
-\filepath{random_forest/} & \filepath{xgboost/} \\
-\filepath{temperature_difference/} & \filepath{power/} \\
-\filepath{torque_wear/} & \filepath{torque_wear_temperature_difference/} \\
-\end{tabular}
-\end{center}
-Each folder is relative to \filepath{artifacts/}.
+SHAP records include encoded/grouped contributions, input values, raw margins,
+scores, global importance, local-example choices, and model/preprocessor
+checksums. Report checks matched all 1,500 explained rows and scores to the
+saved selected-model validation results. Grouping preserves contribution sums.
+The reported maximum margin reconstruction error is
+\(6.81\times10^{-6}\); the maximum score reconstruction error is
+\(6.05\times10^{-7}\). Selected model file checksums still match.
 
-XGBoost classifiers use native UBJSON models and separately saved preprocessing.
-Feature construction must match the saved schema. A portable copy of the
-source records is saved in \filepath{report/verified_results.json}.
+No model was retrained, no new split was created, and no test predictions
+or SHAP explanations were generated while updating this report.
 
-Report verification checked source checksums, validation membership and labels,
-all eight sets of metrics against saved scores, and paired CV tables for all
-four feature trials. No models were fitted, no split was regenerated, and no
-test predictions were produced while updating the report.
-
-\subsection*{12.3 Completed scope and outstanding work}
-Completed: EDA, label-policy documentation, frozen splitting, initial baselines,
-tree-model searches, and training CV. The three individual feature trials,
-the requested combination, and local tracking are complete.
-The user selected the model/features and retained threshold 0.5 without tuning.
+\subsection*{16.3 Completed scope and outstanding work}
+Completed: EDA, target policy, splitting, model searches, training CV, feature
+trials, the requested combination, tracking, seven-input model selection,
+retention of threshold 0.5 without tuning, and validation SHAP explanations.
 
 Not performed: threshold optimization, calibration, row-block sensitivity
-analysis, SHAP, final test evaluation, model registration, or deployment.
+analysis, final test evaluation, model registration, or deployment.
 The evidence remains limited by synthetic data, an assumed label policy,
 rare positives, one random allocation, row-order dependence, whole-file EDA,
-selection reuse, and repeated validation inspection.
+selection reuse, repeated validation inspection, and noncausal model attribution.
 \endgroup
 \end{document}

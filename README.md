@@ -222,6 +222,26 @@ F1=77.78%, AP=0.8336. The user chose the seven-input torque-wear variant
 for the next stage after reviewing this tradeoff.
 See `docs/combined_features_guide.md` for the comparison and inference steps.
 
+## Manual SHAP exercise
+
+[scripts/09_shap.py](scripts/09_shap.py) has been run manually. It loads
+the selected seven-input XGBoost model without refitting, explains validation
+predictions with Tree SHAP, and keeps threshold 0.5 and the final test set reserved.
+SHAP is installed in the project environment.
+
+```powershell
+.\.venv\Scripts\python.exe .\scripts\09_shap.py
+```
+
+Read `artifacts/shap/latest.json` after completion to find the run's output
+folder. It contains global importance, an encoded-feature beeswarm, local
+waterfalls, numerical SHAP values, and metadata. Contributions use log-odds,
+not additive probability percentages. All 1,500 validation rows were explained
+without refitting. Global mean absolute contributions are largest for rotational
+speed, torque, and air temperature; torque-wear ranks fifth. Final test
+evaluation remains reserved. See `docs/shap_guide.md` for interpretation and
+limitations.
+
 ## Local API
 
 The starter API exposes `GET /health`. Prediction depends on a trained model

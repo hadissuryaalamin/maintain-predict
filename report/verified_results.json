@@ -580,5 +580,129 @@
       "preprocessor_file": "preprocessor.skops",
       "mlflow_run_id": "d23d285dbcd24dd2923a6f97e772dbf9"
     }
+  },
+  "shap_summary": {
+    "source_sha256": "dc6630cd9b1f0f853922fad78a1b6436570d3f1ec863f1dd5c4340ac56bc8a8e",
+    "target_policy": "failure_evidence_or_v1",
+    "random_state": 42,
+    "selected_model_run_id": "536e8de3290747f094beae06b7eaf443",
+    "model_sha256": "f5a52bae2210f370010f00236d10a53f9b6cf3cf118b19b6b6fc2cd42832e03b",
+    "preprocessor_sha256": "a6057552c99a6b4e4823d475760f2bd0da3bc067d5601ab5ba89347d19818843",
+    "feature_columns": [
+      "Type",
+      "Air temperature [K]",
+      "Process temperature [K]",
+      "Rotational speed [rpm]",
+      "Torque [Nm]",
+      "Tool wear [min]",
+      "Torque wear [Nm min]"
+    ],
+    "encoded_feature_names": [
+      "type__Type_H",
+      "type__Type_L",
+      "type__Type_M",
+      "sensors__Air temperature [K]",
+      "sensors__Process temperature [K]",
+      "sensors__Rotational speed [rpm]",
+      "sensors__Torque [Nm]",
+      "sensors__Tool wear [min]",
+      "sensors__Torque wear [Nm min]"
+    ],
+    "explanation_partition": "validation",
+    "observations": 1500,
+    "threshold": 0.5,
+    "test_evaluated": false,
+    "model_refitted": false,
+    "method": "TreeExplainer",
+    "feature_perturbation": "tree_path_dependent",
+    "model_output": "raw",
+    "units": "log-odds",
+    "approximate": false,
+    "background": "training path counts stored in the fitted trees; no external background",
+    "type_grouping": "post-hoc signed sum of Type indicator contributions",
+    "example_rule": "smallest source-row index per available TP/FN/FP/TN category",
+    "examples": [
+      {
+        "outcome": "TP",
+        "source_row_index": 194,
+        "UDI": 195,
+        "score": 0.6958066821098328,
+        "actual": 1,
+        "predicted": 1,
+        "file": "waterfall_TP_UDI195.png"
+      },
+      {
+        "outcome": "FN",
+        "source_row_index": 1682,
+        "UDI": 1683,
+        "score": 0.07272421568632126,
+        "actual": 1,
+        "predicted": 0,
+        "file": "waterfall_FN_UDI1683.png"
+      },
+      {
+        "outcome": "FP",
+        "source_row_index": 1590,
+        "UDI": 1591,
+        "score": 0.7646902799606323,
+        "actual": 0,
+        "predicted": 1,
+        "file": "waterfall_FP_UDI1591.png"
+      },
+      {
+        "outcome": "TN",
+        "source_row_index": 2,
+        "UDI": 3,
+        "score": 0.0008225450292229652,
+        "actual": 0,
+        "predicted": 0,
+        "file": "waterfall_TN_UDI3.png"
+      }
+    ],
+    "reconstruction_checks": {
+      "max_abs_margin_error": 6.806105375289917e-06,
+      "max_abs_probability_error": 6.052234720055338e-07
+    },
+    "global_importance": [
+      {
+        "feature": "Rotational speed [rpm]",
+        "mean_abs_shap_log_odds": 1.4332579400323642
+      },
+      {
+        "feature": "Torque [Nm]",
+        "mean_abs_shap_log_odds": 1.3684647408149515
+      },
+      {
+        "feature": "Air temperature [K]",
+        "mean_abs_shap_log_odds": 1.192646581278493
+      },
+      {
+        "feature": "Tool wear [min]",
+        "mean_abs_shap_log_odds": 1.1339549006751428
+      },
+      {
+        "feature": "Torque wear [Nm min]",
+        "mean_abs_shap_log_odds": 1.0531565728629164
+      },
+      {
+        "feature": "Process temperature [K]",
+        "mean_abs_shap_log_odds": 0.4631020692230668
+      },
+      {
+        "feature": "Type",
+        "mean_abs_shap_log_odds": 0.22201076057021663
+      }
+    ],
+    "environment": {
+      "numpy": "2.5.4",
+      "pandas": "3.1.1",
+      "scikit-learn": "1.9.1",
+      "xgboost": "3.4.1",
+      "shap": "0.54.1",
+      "mlflow": "3.18.0",
+      "skops": "0.16.0",
+      "python": "3.14.3"
+    },
+    "mlflow_run_id": "ca1268cdfe0543488e703d7531e280ae"
   }
 }
