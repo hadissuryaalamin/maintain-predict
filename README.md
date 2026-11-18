@@ -199,7 +199,7 @@ Outputs are saved under `artifacts/torque_wear/`. Mean training CV AP increased
 from 0.7165 to 0.7462. At 0.5, validation TP=46, FN=8, FP=16, TN=1,430;
 precision=74.19%, recall=85.19%, F1=79.31%, AP=0.8483.
 The user selected this seven-input variant and retained threshold 0.5 without
-tuning. SHAP explanation and final test evaluation remain outstanding. See
+tuning. SHAP explanation and final test evaluation are now complete. See
 `docs/model_selection.md` for the decision, exact artifacts, and limitations.
 See `docs/torque_wear_guide.md` for details.
 
@@ -226,7 +226,8 @@ See `docs/combined_features_guide.md` for the comparison and inference steps.
 
 [scripts/09_shap.py](scripts/09_shap.py) has been run manually. It loads
 the selected seven-input XGBoost model without refitting, explains validation
-predictions with Tree SHAP, and keeps threshold 0.5 and the final test set reserved.
+predictions with Tree SHAP at threshold 0.5. The test set stayed reserved during
+this exercise and was subsequently evaluated in the final-test step below.
 SHAP is installed in the project environment.
 
 ```powershell
@@ -238,8 +239,8 @@ folder. It contains global importance, an encoded-feature beeswarm, local
 waterfalls, numerical SHAP values, and metadata. Contributions use log-odds,
 not additive probability percentages. All 1,500 validation rows were explained
 without refitting. Global mean absolute contributions are largest for rotational
-speed, torque, and air temperature; torque-wear ranks fifth. Final test
-evaluation remains reserved. See `docs/shap_guide.md` for interpretation and
+speed, torque, and air temperature; torque-wear ranks fifth. See
+`docs/shap_guide.md` for interpretation and
 limitations.
 
 ## Final test evaluation
@@ -254,6 +255,27 @@ Records are under `artifacts/final_test/`. The configuration and model checksums
 were frozen before predictions. Rerunning the script reads the completed
 receipt without generating test predictions again. See
 `docs/final_test_guide.md` for the audit details and interpretation limits.
+
+## Local MLflow registry exercise
+
+Ten completed runs already track the model experiments, SHAP, and final test.
+[scripts/11_register_model.py](scripts/11_register_model.py) is prepared for
+manual execution to register the selected package as `maintain-predict` version
+1, with alias `selected`. Registration has not been executed by preparing this
+script. It bundles the saved XGBoost model, preprocessing, torque-wear
+calculation, threshold 0.5, code, and dependency requirements without refitting
+or evaluating the dataset again.
+
+```powershell
+.\.venv\Scripts\python.exe .\scripts\11_register_model.py
+```
+
+After execution, inspect `artifacts/registry/registration.json`. The package
+accepts six raw columns and derives the seventh feature internally; it returns
+the failure score, label, and threshold. Checks compare native and packaged
+predictions on three fabricated rows. Matching v1 registrations are reused;
+conflicting versions are refused. See `docs/registry_guide.md` for the workflow,
+MLflow UI command, and loading examples. Registration does not deploy a service.
 
 ## Local API
 
