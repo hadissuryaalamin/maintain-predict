@@ -1,4 +1,4 @@
-"""Binary validation metrics and diagnostic plots for the manual exercise."""
+"""Binary evaluation metrics and diagnostic plots."""
 
 from pathlib import Path
 
@@ -49,7 +49,19 @@ def classification_metrics(target, probabilities, *, threshold: float = 0.5) -> 
 
 
 def save_validation_plots(target, probabilities, metrics: dict, output_dir: str | Path, *, title: str) -> list[Path]:
-    """Save PR and confusion-matrix plots for the supplied validation outputs."""
+    """Preserve the validation exercise's existing filenames and labels."""
+    return save_evaluation_plots(
+        target, probabilities, metrics, output_dir, title=title, partition="validation",
+    )
+
+
+def save_evaluation_plots(
+    target, probabilities, metrics: dict, output_dir: str | Path, *,
+    title: str, partition: str,
+) -> list[Path]:
+    """Save plots labeled for their actual validation or test partition."""
+    if partition not in {"validation", "test"}:
+        raise ValueError("Plot partition must be validation or test.")
     import matplotlib
 
     matplotlib.use("Agg")
@@ -61,9 +73,9 @@ def save_validation_plots(target, probabilities, metrics: dict, output_dir: str 
     fig, ax = plt.subplots(figsize=(7, 4), layout="constrained")
     ax.step(recall, precision, where="post", label=f"AP = {metrics['average_precision']:.3f}")
     ax.set(xlabel="Recall", ylabel="Precision", xlim=(0, 1), ylim=(0, 1.05))
-    ax.set_title(title + "\nValidation precision–recall curve")
+    ax.set_title(title + f"\n{partition.capitalize()} precision–recall curve")
     ax.legend(frameon=False)
-    pr_path = output_dir / "validation_precision_recall.png"
+    pr_path = output_dir / f"{partition}_precision_recall.png"
     fig.savefig(pr_path, dpi=150)
     plt.close(fig)
 
@@ -73,8 +85,8 @@ def save_validation_plots(target, probabilities, metrics: dict, output_dir: str 
     ConfusionMatrixDisplay(matrix, display_labels=["No evidence", "Evidence"]).plot(
         ax=ax, cmap="Blues", colorbar=False, values_format="d"
     )
-    ax.set_title(title + f"\nValidation; threshold {metrics['threshold']:g}")
-    confusion_path = output_dir / "validation_confusion_matrix.png"
+    ax.set_title(title + f"\n{partition.capitalize()}; threshold {metrics['threshold']:g}")
+    confusion_path = output_dir / f"{partition}_confusion_matrix.png"
     fig.savefig(confusion_path, dpi=150)
     plt.close(fig)
     return [pr_path, confusion_path]

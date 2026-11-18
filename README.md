@@ -242,6 +242,19 @@ speed, torque, and air temperature; torque-wear ranks fifth. Final test
 evaluation remains reserved. See `docs/shap_guide.md` for interpretation and
 limitations.
 
+## Final test evaluation
+
+The selected seven-input XGBoost model was evaluated once, without refitting,
+at threshold 0.5 using [scripts/10_final_test.py](scripts/10_final_test.py).
+On the 1,500 test rows (53 positive labels), it detected 43 positives, missed
+10, and raised 14 false alarms: precision **75.44%**, recall **81.13%**,
+F1 **78.18%**, AP **0.8466**, and accuracy **98.40%**.
+
+Records are under `artifacts/final_test/`. The configuration and model checksums
+were frozen before predictions. Rerunning the script reads the completed
+receipt without generating test predictions again. See
+`docs/final_test_guide.md` for the audit details and interpretation limits.
+
 ## Local API
 
 The starter API exposes `GET /health`. Prediction depends on a trained model
