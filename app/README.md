@@ -1,5 +1,15 @@
-# Hugging Face Spaces demo
+---
+title: Maintain Predict
+emoji: 😻
+colorFrom: gray
+colorTo: blue
+sdk: gradio
+sdk_version: 6.32.0
+python_version: '3.12.12'
+app_file: app.py
+pinned: false
+license: mit
+short_description: 'Predict failure evidence from machine sensor readings using '
+---
 
-The Gradio demo will use the published model to score a machine reading and
-display the strongest SHAP contributors. The demo depends on a trained model
-and explanation artifacts.
+Check out the configuration reference at https://huggingface.co/docs/hub/spaces-config-reference
