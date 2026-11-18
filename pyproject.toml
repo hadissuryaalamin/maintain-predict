@@ -7,6 +7,8 @@ name = "maintain-predict"
 version = "0.1.0"
 description = "Machine failure risk prediction using the AI4I 2020 dataset"
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.11"
 dependencies = [
     "fastapi",
