@@ -1,0 +1,12 @@
+# Direct serving dependencies from the locally verified API environment.
+# Use Python 3.12+; training and Gradio dependencies are not needed here.
+fastapi==0.162.7
+huggingface_hub==2.4.0
+pydantic==2.14.3
+uvicorn==0.54.0
+numpy==2.5.4
+pandas==3.1.1
+scipy==1.18.1
+scikit-learn==1.9.1
+skops==0.16.0
+xgboost==3.4.1

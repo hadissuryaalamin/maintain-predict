@@ -259,10 +259,9 @@ receipt without generating test predictions again. See
 ## Local MLflow registry exercise
 
 Ten completed runs already track the model experiments, SHAP, and final test.
-[scripts/11_register_model.py](scripts/11_register_model.py) is prepared for
-manual execution to register the selected package as `maintain-predict` version
-1, with alias `selected`. Registration has not been executed by preparing this
-script. It bundles the saved XGBoost model, preprocessing, torque-wear
+[scripts/11_register_model.py](scripts/11_register_model.py) was run manually
+by the user and registered the selected package as `maintain-predict` version
+1, with alias `selected`. It bundles the saved XGBoost model, preprocessing, torque-wear
 calculation, threshold 0.5, code, and dependency requirements without refitting
 or evaluating the dataset again.
 
@@ -279,15 +278,63 @@ MLflow UI command, and loading examples. Registration does not deploy a service.
 
 ## Local API
 
-The starter API exposes `GET /health`. Prediction depends on a trained model
-and a validation threshold.
+The local FastAPI service exposes `GET /health` and `POST /predict`. It loads
+the selected seven-feature XGBoost release once at startup, derives torque-wear
+internally, and returns a failure score, label, threshold 0.5, and target policy.
+By default, it downloads only the three model artifacts from the pinned Hub
+commit `f5cb6c7890cffb30a1ff29644c217d3fcd4ea1a5`. Set
+`MAINTAIN_PREDICT_MODEL_DIR` to use an existing local artifact directory instead.
 
 ```bash
-python -m uvicorn maintain_predict.serve:app
+python -m uvicorn maintain_predict.serve:app --reload --host 127.0.0.1 --port 8000
 ```
 
-```bash
-docker build -t maintain-predict .
-docker run --rm -p 8000:8000 maintain-predict
-curl http://localhost:8000/health
+Open [the interactive API docs](http://127.0.0.1:8000/docs), expand
+`POST /predict`, and use **Try it out**. A request example and walkthrough are
+in `docs/fastapi_guide.md`. Fresh environments can install serving dependencies
+with `python -m pip install ".[serve]"` using Python 3.12 or 3.14.
+
+## Manual Docker exercise
+
+The Dockerfile and [scripts/14_docker.py](scripts/14_docker.py) are prepared for
+manual execution. Run one step at a time from the project root:
+
+```powershell
+.\.venv\Scripts\python.exe .\scripts\14_docker.py check
+.\.venv\Scripts\python.exe .\scripts\14_docker.py build
+.\.venv\Scripts\python.exe .\scripts\14_docker.py run
+.\.venv\Scripts\python.exe .\scripts\14_docker.py test
 ```
+
+The container API is at `http://127.0.0.1:8001/docs`, separate from the ordinary
+local API on port 8000. Use the `logs` step to inspect startup and `stop` to stop
+and remove only the exercise container. Read `docs/docker_guide.md` for the
+commands, outputs, and troubleshooting. Direct serving versions are pinned in
+`requirements/serve.txt`; the image loads the pinned public model on startup.
+
+The user completed the real Docker build and container checks: readiness,
+the matching example prediction (score 0.000591965, class 0), and HTTP 422
+validation passed. Evidence is in `artifacts/docker/test_receipt.json`.
+The user subsequently built `Dockerfile.security-review`, tested it locally,
+and pushed `v2-security-review` to private ECR in Sydney (`ap-southeast-2`).
+The completed basic scan reported HIGH 2, MEDIUM 14, and LOW 3; the two HIGH
+findings remain open. See [the security review](docs/ecr_security_review.md).
+
+## AWS deployment
+
+The selected model was successfully served on an Amazon Linux 2023
+`t3.micro` EC2 instance. Health and the fabricated example prediction passed
+inside EC2 and from the laptop through Session Manager port forwarding:
+score `0.0005919649847783148`, class `0`, threshold `0.5`.
+
+The API is restricted to the EC2 host and accessed through a tunnel at
+`http://127.0.0.1:8003`; this is not a public endpoint. The instance is now
+**Stopped**, as confirmed by the user. A US$10 monthly budget with verified
+email alerts is configured; retained EBS and ECR storage can still incur costs.
+Local Docker test images were removed without deleting the ECR or EC2 copies.
+
+Follow [the AWS deployment and restart guide](docs/aws_deployment_guide.md) to
+start the existing instance, open the tunnel, send a prediction, and stop the
+instance afterwards. CI success and the `maintain-ai` integration remain to be
+verified/completed. The current CI builds the root Dockerfile; the tested AWS
+release used `Dockerfile.security-review`.
