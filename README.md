@@ -335,6 +335,11 @@ Local Docker test images were removed without deleting the ECR or EC2 copies.
 
 Follow [the AWS deployment and restart guide](docs/aws_deployment_guide.md) to
 start the existing instance, open the tunnel, send a prediction, and stop the
-instance afterwards. CI success and the `maintain-ai` integration remain to be
-verified/completed. The current CI builds the root Dockerfile; the tested AWS
+instance afterwards. The user confirmed a green GitHub Actions CI run after
+pushing the deployment changes on 20 November 2026. The `maintain-ai`
+integration and its five-scenario feature-off/on evaluation are complete locally.
+The user also completed a live agent-to-EC2 call: run
+`78e72096-8e73-449e-9146-81e0c7d2e3e8`, tool succeeded in 222 ms, class 0,
+score approximately `0.000591965`. See [the completion record](docs/project_completion.md)
+for the comparison, evidence, and limitations. The current CI builds the root Dockerfile; the tested AWS
 release used `Dockerfile.security-review`.
